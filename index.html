@@ -109,116 +109,235 @@
         }
         
         /* Mobile adjustments */
-        /* Mobile elements - hidden by default on desktop */
-        #mobileMenuBtn, #mobileActions, #mobileOverlay {
+        /* =====================================================
+           MOBILE NAVIGATION SYSTEM
+           ===================================================== */
+        
+        /* Hidden on desktop */
+        #mobileNav, #mobileSearchPanel, #mobileReadPanel {
             display: none;
         }
         
-        #mobileMenuBtn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 101;
-            background: #238636;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: 1.2em;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        
-        #mobileMenuBtn:hover {
-            background: #2ea043;
-        }
-        
         @media (max-width: 768px) {
-            #mobileMenuBtn {
-                display: block;
+            /* Hide desktop elements */
+            #controls, #nodePanel, #legend, #stats {
+                display: none !important;
             }
             
-            #controls {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                width: 85%;
-                max-width: 320px;
-                height: 100%;
-                padding: 60px 20px 20px;
-                font-size: 0.9em;
-                transition: left 0.3s ease;
-                z-index: 100;
-                overflow-y: auto;
-            }
-            
-            #controls.mobile-open {
-                left: 0;
-            }
-            
-            #mobileOverlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 99;
-            }
-            
-            #mobileOverlay.active {
-                display: block;
-            }
-            
-            #nodePanel {
-                display: none !important; /* Hide on mobile - too cramped */
-            }
-            
-            #legend {
-                display: none; /* Hide legend on mobile */
-            }
-            
-            #stats {
-                display: none !important; /* Hide stats on mobile */
-            }
-            
-            .touch-btn {
-                padding: 12px 15px;
-                font-size: 1em;
-            }
-            
-            #legend kbd {
-                display: none; /* Hide keyboard hints on mobile */
-            }
-            
-            /* Quick action bar at bottom for mobile */
-            #mobileActions {
+            /* Bottom tab navigation */
+            #mobileNav {
                 display: flex;
                 position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
+                background: #0d1117;
+                border-top: 1px solid #30363d;
+                z-index: 100;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            
+            .mobile-tab {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 10px 5px;
+                background: none;
+                border: none;
+                color: #8b949e;
+                font-size: 0.7em;
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+            
+            .mobile-tab .icon {
+                font-size: 1.5em;
+                margin-bottom: 3px;
+            }
+            
+            .mobile-tab.active {
+                color: #58a6ff;
+            }
+            
+            .mobile-tab:active {
+                background: rgba(88, 166, 255, 0.1);
+            }
+            
+            /* Floating action button for network search */
+            #mobileFab {
+                position: fixed;
+                bottom: 80px;
+                right: 20px;
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: #238636;
+                color: #fff;
+                border: none;
+                font-size: 1.5em;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                z-index: 90;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            #mobileFab:active {
+                transform: scale(0.95);
+            }
+            
+            /* Search panel (slides up) */
+            #mobileSearchPanel {
+                display: none;
+                position: fixed;
+                bottom: 60px;
+                left: 0;
+                right: 0;
                 background: #161b22;
                 border-top: 1px solid #30363d;
-                padding: 10px;
-                gap: 10px;
-                z-index: 50;
+                border-radius: 16px 16px 0 0;
+                padding: 20px;
+                z-index: 95;
+                max-height: 70vh;
+                overflow-y: auto;
             }
             
-            #mobileActions button {
-                flex: 1;
-                padding: 12px;
-                background: #21262d;
+            #mobileSearchPanel.active {
+                display: block;
+            }
+            
+            #mobileSearchPanel h3 {
+                margin: 0 0 15px;
                 color: #c9d1d9;
+                font-size: 1em;
+            }
+            
+            #mobileSearchPanel input {
+                width: 100%;
+                padding: 12px 15px;
+                background: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                color: #c9d1d9;
+                font-size: 1em;
+                margin-bottom: 15px;
+            }
+            
+            #mobileSearchPanel select {
+                width: 100%;
+                padding: 12px 15px;
+                background: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                color: #c9d1d9;
+                font-size: 1em;
+                margin-bottom: 10px;
+            }
+            
+            #mobileSearchPanel button {
+                width: 100%;
+                padding: 14px;
+                background: #238636;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                font-size: 1em;
+                cursor: pointer;
+                margin-top: 10px;
+            }
+            
+            /* Read panel (book/chapter picker) */
+            #mobileReadPanel {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 60px;
+                background: #0d1117;
+                z-index: 80;
+                overflow-y: auto;
+                padding: 20px;
+            }
+            
+            #mobileReadPanel.active {
+                display: block;
+            }
+            
+            #mobileReadPanel h2 {
+                color: #c9d1d9;
+                margin: 0 0 20px;
+                font-size: 1.3em;
+            }
+            
+            .book-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+            
+            .book-btn {
+                padding: 12px 8px;
+                background: #21262d;
                 border: 1px solid #30363d;
                 border-radius: 6px;
+                color: #c9d1d9;
                 font-size: 0.85em;
                 cursor: pointer;
+                text-align: center;
             }
             
-            #mobileActions button:active {
-                background: #30363d;
+            .book-btn:active, .book-btn.selected {
+                background: #238636;
+                border-color: #238636;
+            }
+            
+            .chapter-grid {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            
+            .chapter-btn {
+                padding: 15px 10px;
+                background: #21262d;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                color: #c9d1d9;
+                font-size: 1em;
+                cursor: pointer;
+                text-align: center;
+            }
+            
+            .chapter-btn:active {
+                background: #238636;
+            }
+            
+            #mobileChapterSection {
+                display: none;
+            }
+            
+            #mobileChapterSection.active {
+                display: block;
+            }
+            
+            #mobileBookTitle {
+                color: #58a6ff;
+                margin: 20px 0 15px;
+                font-size: 1.1em;
+            }
+            
+            /* Concordance mobile adjustments */
+            #concordanceView.active {
+                bottom: 60px;
+            }
+            
+            /* Graph takes full screen minus nav */
+            #container {
+                bottom: 60px;
             }
         }
         
@@ -1034,9 +1153,46 @@
     </style>
 </head>
 <body>
-    <!-- Mobile menu button -->
-    <button id="mobileMenuBtn" onclick="toggleMobileMenu()">☰</button>
-    <div id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+    <!-- Mobile Navigation -->
+    <nav id="mobileNav">
+        <button class="mobile-tab active" onclick="mobileSetTab('network')" data-tab="network">
+            <span class="icon">🕸️</span>
+            <span>Network</span>
+        </button>
+        <button class="mobile-tab" onclick="mobileSetTab('search')" data-tab="search">
+            <span class="icon">🔍</span>
+            <span>Search</span>
+        </button>
+        <button class="mobile-tab" onclick="mobileSetTab('read')" data-tab="read">
+            <span class="icon">📖</span>
+            <span>Read</span>
+        </button>
+    </nav>
+    
+    <!-- Floating action button for network search -->
+    <button id="mobileFab" onclick="toggleMobileSearch()">🔍</button>
+    
+    <!-- Mobile search panel (network mode) -->
+    <div id="mobileSearchPanel">
+        <h3>Search Network</h3>
+        <input type="text" id="mobileNetworkSearch" placeholder="Search nodes...">
+        <select id="mobileBookFilter">
+            <option value="">All Books</option>
+        </select>
+        <button onclick="doMobileSearch()">Search</button>
+        <button onclick="toggleMobileSearch()" style="background:#30363d;margin-top:5px;">Close</button>
+    </div>
+    
+    <!-- Mobile read panel (book/chapter picker) -->
+    <div id="mobileReadPanel">
+        <h2>📖 Select a Chapter</h2>
+        <div id="mobileBookList" class="book-grid"></div>
+        <div id="mobileChapterSection">
+            <h3 id="mobileBookTitle">Genesis</h3>
+            <button onclick="mobileBackToBooks()" style="margin-bottom:15px;padding:8px 16px;background:#30363d;border:none;color:#c9d1d9;border-radius:6px;">← Back to Books</button>
+            <div id="mobileChapterList" class="chapter-grid"></div>
+        </div>
+    </div>
     
     <div id="container">
         <div id="loading">Loading semantic network...</div>
@@ -1191,46 +1347,125 @@
         <div id="tooltip"></div>
     </div>
     
-    <!-- Mobile action bar -->
-    <div id="mobileActions">
-        <button onclick="setMode('network'); toggleMobileMenu(false);">🕸️ Network</button>
-        <button onclick="setMode('concordance'); toggleMobileMenu(false);">📚 Search</button>
-        <button onclick="promptGotoChapter()">📖 Read</button>
-    </div>
-    
     <script>
-        // Mobile menu toggle
-        function toggleMobileMenu(forceState) {
-            const controls = document.getElementById('controls');
-            const overlay = document.getElementById('mobileOverlay');
-            const btn = document.getElementById('mobileMenuBtn');
+        // Mobile navigation state
+        let currentMobileTab = 'network';
+        let mobileSearchOpen = false;
+        let selectedMobileBook = null;
+        
+        function mobileSetTab(tab) {
+            currentMobileTab = tab;
             
-            const shouldOpen = forceState !== undefined ? forceState : !controls.classList.contains('mobile-open');
+            // Update tab buttons
+            document.querySelectorAll('.mobile-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
             
-            if (shouldOpen) {
-                controls.classList.add('mobile-open');
-                overlay.classList.add('active');
-                btn.textContent = '✕';
-            } else {
-                controls.classList.remove('mobile-open');
-                overlay.classList.remove('active');
-                btn.textContent = '☰';
+            // Hide all panels
+            document.getElementById('mobileSearchPanel').classList.remove('active');
+            document.getElementById('mobileReadPanel').classList.remove('active');
+            document.getElementById('concordanceView').classList.remove('active');
+            
+            const fab = document.getElementById('mobileFab');
+            const container = document.getElementById('container');
+            
+            if (tab === 'network') {
+                fab.style.display = 'flex';
+                container.style.display = 'block';
+                setMode('network');
+            } else if (tab === 'search') {
+                fab.style.display = 'none';
+                container.style.display = 'none';
+                setMode('concordance');
+            } else if (tab === 'read') {
+                fab.style.display = 'none';
+                container.style.display = 'none';
+                document.getElementById('mobileReadPanel').classList.add('active');
+                initMobileReadPanel();
             }
         }
         
-        // Quick chapter picker for mobile
-        function promptGotoChapter() {
-            if (!chaptersData) {
-                alert('Still loading...');
-                return;
+        function toggleMobileSearch() {
+            const panel = document.getElementById('mobileSearchPanel');
+            mobileSearchOpen = !mobileSearchOpen;
+            panel.classList.toggle('active', mobileSearchOpen);
+            
+            if (mobileSearchOpen) {
+                // Populate book filter if not done
+                const select = document.getElementById('mobileBookFilter');
+                if (select.options.length <= 1 && typeof allData !== 'undefined' && allData.meta) {
+                    allData.meta.books.forEach(book => {
+                        const opt = document.createElement('option');
+                        opt.value = book;
+                        opt.textContent = book;
+                        select.appendChild(opt);
+                    });
+                }
+                document.getElementById('mobileNetworkSearch').focus();
             }
-            // Just open Genesis 1 or use the goto selector
-            const bookSelect = document.getElementById('gotoBook');
-            const chapterSelect = document.getElementById('gotoChapter');
-            if (bookSelect && chapterSelect) {
-                toggleMobileMenu(true);
-                bookSelect.focus();
+        }
+        
+        function doMobileSearch() {
+            const query = document.getElementById('mobileNetworkSearch').value.trim();
+            const book = document.getElementById('mobileBookFilter').value;
+            
+            // Apply book filter
+            if (book) {
+                document.getElementById('bookFilter').value = book;
+                filterByBook(book);
             }
+            
+            // Do search
+            if (query) {
+                document.getElementById('search').value = query;
+                doSearch();
+            }
+            
+            toggleMobileSearch();
+        }
+        
+        function initMobileReadPanel() {
+            if (!chaptersData) return;
+            
+            const bookList = document.getElementById('mobileBookList');
+            if (bookList.children.length > 0) return; // Already initialized
+            
+            const books = chaptersData.meta.books;
+            bookList.innerHTML = books.map(book => 
+                `<button class="book-btn" onclick="mobileSelectBook('${book}')">${book}</button>`
+            ).join('');
+        }
+        
+        function mobileSelectBook(book) {
+            selectedMobileBook = book;
+            
+            // Update UI
+            document.getElementById('mobileBookList').style.display = 'none';
+            document.getElementById('mobileChapterSection').classList.add('active');
+            document.getElementById('mobileBookTitle').textContent = book;
+            
+            // Get chapters for this book
+            const bookChapters = chaptersData.order.filter(key => 
+                chaptersData.chapters[key].book === book
+            );
+            
+            const chapterList = document.getElementById('mobileChapterList');
+            chapterList.innerHTML = bookChapters.map(key => {
+                const ch = chaptersData.chapters[key].chapter;
+                return `<button class="chapter-btn" onclick="mobileOpenChapter('${key}')">${ch}</button>`;
+            }).join('');
+        }
+        
+        function mobileBackToBooks() {
+            document.getElementById('mobileBookList').style.display = 'grid';
+            document.getElementById('mobileChapterSection').classList.remove('active');
+            selectedMobileBook = null;
+        }
+        
+        function mobileOpenChapter(chapterKey) {
+            openReader(chapterKey);
+            // Return to network view after opening reader
+            document.getElementById('mobileReadPanel').classList.remove('active');
         }
     </script>
     
