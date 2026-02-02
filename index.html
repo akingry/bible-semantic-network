@@ -109,11 +109,66 @@
         }
         
         /* Mobile adjustments */
+        /* Mobile elements - hidden by default on desktop */
+        #mobileMenuBtn, #mobileActions, #mobileOverlay {
+            display: none;
+        }
+        
+        #mobileMenuBtn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 101;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        #mobileMenuBtn:hover {
+            background: #2ea043;
+        }
+        
         @media (max-width: 768px) {
+            #mobileMenuBtn {
+                display: block;
+            }
+            
             #controls {
-                max-width: 250px;
-                padding: 15px;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 85%;
+                max-width: 320px;
+                height: 100%;
+                padding: 60px 20px 20px;
                 font-size: 0.9em;
+                transition: left 0.3s ease;
+                z-index: 100;
+                overflow-y: auto;
+            }
+            
+            #controls.mobile-open {
+                left: 0;
+            }
+            
+            #mobileOverlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 99;
+            }
+            
+            #mobileOverlay.active {
+                display: block;
             }
             
             #nodePanel {
@@ -121,16 +176,14 @@
             }
             
             #legend {
-                bottom: auto;
-                top: auto;
-                right: 20px;
-                left: auto;
-                bottom: 20px;
+                display: none; /* Hide legend on mobile */
             }
             
             #stats {
-                font-size: 0.8em;
-                padding: 10px 15px;
+                font-size: 0.75em;
+                padding: 8px 12px;
+                top: 10px;
+                right: 10px;
             }
             
             .touch-btn {
@@ -140,6 +193,35 @@
             
             #legend kbd {
                 display: none; /* Hide keyboard hints on mobile */
+            }
+            
+            /* Quick action bar at bottom for mobile */
+            #mobileActions {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #161b22;
+                border-top: 1px solid #30363d;
+                padding: 10px;
+                gap: 10px;
+                z-index: 50;
+            }
+            
+            #mobileActions button {
+                flex: 1;
+                padding: 12px;
+                background: #21262d;
+                color: #c9d1d9;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                font-size: 0.85em;
+                cursor: pointer;
+            }
+            
+            #mobileActions button:active {
+                background: #30363d;
             }
         }
         
@@ -875,6 +957,10 @@
     </style>
 </head>
 <body>
+    <!-- Mobile menu button -->
+    <button id="mobileMenuBtn" onclick="toggleMobileMenu()">☰</button>
+    <div id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+    
     <div id="container">
         <div id="loading">Loading semantic network...</div>
         <svg id="graph"></svg>
@@ -1025,6 +1111,49 @@
         
         <div id="tooltip"></div>
     </div>
+    
+    <!-- Mobile action bar -->
+    <div id="mobileActions">
+        <button onclick="setMode('network'); toggleMobileMenu(false);">🕸️ Network</button>
+        <button onclick="setMode('concordance'); toggleMobileMenu(false);">📚 Search</button>
+        <button onclick="promptGotoChapter()">📖 Read</button>
+    </div>
+    
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu(forceState) {
+            const controls = document.getElementById('controls');
+            const overlay = document.getElementById('mobileOverlay');
+            const btn = document.getElementById('mobileMenuBtn');
+            
+            const shouldOpen = forceState !== undefined ? forceState : !controls.classList.contains('mobile-open');
+            
+            if (shouldOpen) {
+                controls.classList.add('mobile-open');
+                overlay.classList.add('active');
+                btn.textContent = '✕';
+            } else {
+                controls.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+                btn.textContent = '☰';
+            }
+        }
+        
+        // Quick chapter picker for mobile
+        function promptGotoChapter() {
+            if (!chaptersData) {
+                alert('Still loading...');
+                return;
+            }
+            // Just open Genesis 1 or use the goto selector
+            const bookSelect = document.getElementById('gotoBook');
+            const chapterSelect = document.getElementById('gotoChapter');
+            if (bookSelect && chapterSelect) {
+                toggleMobileMenu(true);
+                bookSelect.focus();
+            }
+        }
+    </script>
     
     <script>
         // Colors by role
