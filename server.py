@@ -1,65 +1,94 @@
+#!/usr/bin/env python3
 """
-Simple HTTP server to serve the Bible network visualization.
+Bible Visualization Server with streaming Edge TTS.
+Uses aiohttp for proper chunked streaming to browsers.
 """
 
-import http.server
-import socketserver
-import webbrowser
+import asyncio
 import os
 import socket
-from pathlib import Path
+import webbrowser
+from aiohttp import web
+import edge_tts
 
-PORT = 8080
-DIRECTORY = Path(__file__).parent
+VOICE = "en-IE-EmilyNeural"
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(DIRECTORY), **kwargs)
-
-def find_open_port(start=8080, end=8100):
-    """Find an available port."""
+def find_open_port(start=8000, end=9000):
+    """Find an available port in the given range."""
     for port in range(start, end):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', port))
+                s.bind(('localhost', port))
                 return port
         except OSError:
             continue
-    return None
+    raise RuntimeError(f"No open port found in range {start}-{end}")
 
-def main():
-    os.chdir(DIRECTORY)
-    
-    # Check if network_data.json exists
-    if not (DIRECTORY / "network_data.json").exists():
-        print("network_data.json not found. Building network...")
-        import build_network
-        build_network.main()
-        print()
-    
-    # Find available port
-    port = find_open_port(PORT)
-    if port is None:
-        print("Error: No available ports found (8080-8100)")
-        return
-    
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        url = f"http://localhost:{port}/visualization.html"
-        print(f"=" * 50)
-        print(f"Bible Keywords Network Visualization")
-        print(f"=" * 50)
-        print(f"Server running at: http://localhost:{port}")
-        print(f"Opening browser...")
-        print(f"Press Ctrl+C to stop")
-        print(f"=" * 50)
+async def handle_tts(request):
+    """Stream TTS audio as it's generated."""
+    try:
+        data = await request.json()
+        text = data.get('text', '')
         
-        webbrowser.open(url)
+        if not text:
+            return web.Response(status=400, text="No text provided")
         
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("\nServer stopped.")
+        print(f"TTS streaming audio for {len(text)} chars...")
+        
+        response = web.StreamResponse(
+            status=200,
+            headers={
+                'Content-Type': 'audio/mpeg',
+                'Cache-Control': 'no-cache',
+                'Access-Control-Allow-Origin': '*',
+            }
+        )
+        await response.prepare(request)
+        
+        communicate = edge_tts.Communicate(text, VOICE)
+        bytes_sent = 0
+        
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                await response.write(chunk["data"])
+                bytes_sent += len(chunk["data"])
+        
+        print(f"TTS sent {bytes_sent} bytes")
+        await response.write_eof()
+        return response
+        
+    except Exception as e:
+        print(f"TTS Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return web.Response(status=500, text=str(e))
 
-if __name__ == "__main__":
-    main()
+async def handle_options(request):
+    """Handle CORS preflight."""
+    return web.Response(
+        headers={
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        }
+    )
+
+def run_server():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    port = find_open_port()
+    
+    app = web.Application()
+    app.router.add_post('/api/tts', handle_tts)
+    app.router.add_options('/api/tts', handle_options)
+    app.router.add_static('/', '.', show_index=True)
+    
+    url = f"http://localhost:{port}/visualization.html"
+    print(f"Bible Visualization Server running at http://localhost:{port}")
+    print(f"TTS Voice: {VOICE} (streaming)")
+    print("Press Ctrl+C to stop")
+    
+    webbrowser.open(url)
+    web.run_app(app, host='localhost', port=port, print=None)
+
+if __name__ == '__main__':
+    run_server()

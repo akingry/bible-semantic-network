@@ -723,6 +723,36 @@
             text-align: center;
         }
         
+        .play-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-right: 15px;
+        }
+        
+        .play-btn:hover {
+            background: #7a5a45;
+            transform: scale(1.05);
+        }
+        
+        .play-btn.loading {
+            background: #8b7355;
+            cursor: wait;
+        }
+        
+        .play-btn.playing {
+            background: #2d5a27;
+        }
+        
         #readerContent {
             flex: 1;
             overflow-y: auto;
@@ -758,6 +788,35 @@
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
+        }
+        
+        #readerGoto {
+            background: #f0ebe3;
+            padding: 10px 25px 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #readerGoto select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        #readerGoto button {
+            padding: 6px 14px;
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        #readerGoto button:hover {
+            background: #7a5a45;
         }
         
         .nav-btn {
@@ -869,6 +928,9 @@
                         <div id="readerSummary">"God creates heavens and earth slowly."</div>
                     </div>
                     <div style="display:flex;align-items:center;">
+                        <button class="play-btn" id="btnPlayChapter" onclick="toggleChapterAudio()" title="Listen to chapter">
+                            ▶
+                        </button>
                         <div class="font-controls">
                             <button class="font-btn" onclick="adjustFontSize(-1)" title="Decrease font size">−</button>
                             <span class="font-size-label" id="fontSizeLabel">100%</span>
@@ -884,6 +946,11 @@
                     <button class="nav-btn prev" id="btnPrevChapter" onclick="navigateChapter('prev')">Previous</button>
                     <div id="readerPosition">Chapter 1 of 50</div>
                     <button class="nav-btn next" id="btnNextChapter" onclick="navigateChapter('next')">Next</button>
+                </div>
+                <div id="readerGoto">
+                    <select id="readerGotoBook"></select>
+                    <select id="readerGotoChapter"></select>
+                    <button onclick="gotoSelectedChapter('reader')">Go</button>
                 </div>
             </div>
         </div>
@@ -905,6 +972,15 @@
             
             <label>Filter by Book:</label>
             <select id="bookFilter"><option value="">All Books</option></select>
+            
+            <div class="goto-chapter">
+                <label>Go to Chapter:</label>
+                <div style="display:flex;gap:5px;margin-top:5px;">
+                    <select id="gotoBook" style="flex:2;"></select>
+                    <select id="gotoChapter" style="flex:1;"></select>
+                    <button onclick="gotoSelectedChapter()" style="padding:6px 10px;background:#8b5cf6;color:#fff;border:none;border-radius:6px;cursor:pointer;">📖</button>
+                </div>
+            </div>
             
             <label>Show Roles:</label>
             <div style="margin-top:5px;">
@@ -1990,8 +2066,69 @@
                 const response = await fetch("chapters.json");
                 chaptersData = await response.json();
                 console.log("Chapters loaded:", chaptersData.meta.total_chapters);
+                setupGotoChapterSelectors();
             } catch (error) {
                 console.error("Could not load chapters:", error);
+            }
+        }
+        
+        function setupGotoChapterSelectors() {
+            if (!chaptersData) return;
+            
+            const books = chaptersData.meta.books;
+            
+            // Setup both selectors (main controls and reader)
+            ['', 'reader'].forEach(prefix => {
+                const bookSelect = document.getElementById(prefix ? `${prefix}GotoBook` : 'gotoBook');
+                const chapterSelect = document.getElementById(prefix ? `${prefix}GotoChapter` : 'gotoChapter');
+                
+                if (!bookSelect || !chapterSelect) return;
+                
+                // Populate books
+                bookSelect.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
+                
+                // Update chapters when book changes
+                bookSelect.addEventListener('change', () => updateChapterSelect(bookSelect, chapterSelect));
+                
+                // Initialize chapter list for first book
+                updateChapterSelect(bookSelect, chapterSelect);
+            });
+        }
+        
+        function updateChapterSelect(bookSelect, chapterSelect) {
+            if (!chaptersData) return;
+            
+            const book = bookSelect.value;
+            const bookChapters = chaptersData.order.filter(key => chaptersData.chapters[key].book === book);
+            
+            chapterSelect.innerHTML = bookChapters.map(key => {
+                const ch = chaptersData.chapters[key].chapter;
+                return `<option value="${key}">${ch}</option>`;
+            }).join('');
+        }
+        
+        function gotoSelectedChapter(source) {
+            const bookSelect = document.getElementById(source === 'reader' ? 'readerGotoBook' : 'gotoBook');
+            const chapterSelect = document.getElementById(source === 'reader' ? 'readerGotoChapter' : 'gotoChapter');
+            
+            const chapterKey = chapterSelect.value;
+            if (chapterKey && chaptersData && chaptersData.chapters[chapterKey]) {
+                openReader(chapterKey);
+            }
+        }
+        
+        function syncReaderGotoSelectors() {
+            // Sync the reader selectors to current chapter
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const bookSelect = document.getElementById('readerGotoBook');
+            const chapterSelect = document.getElementById('readerGotoChapter');
+            
+            if (bookSelect && chapterSelect) {
+                bookSelect.value = chapter.book;
+                updateChapterSelect(bookSelect, chapterSelect);
+                chapterSelect.value = currentReaderChapter;
             }
         }
         
@@ -2011,7 +2148,13 @@
             // Build verses HTML
             let versesHtml = "";
             chapter.verses.forEach(v => {
-                versesHtml += `<span class="verse"><span class="verse-num">${v.verse}</span> <span class="verse-text">${v.text}</span> </span>`;
+                // Clean up NASB textual variant markers for readability
+                let text = v.text
+                    .replace(/\*/g, '')           // Remove asterisks
+                    .replace(/\[|\]/g, '')        // Remove square brackets
+                    .replace(/\s+/g, ' ')         // Normalize whitespace
+                    .trim();
+                versesHtml += `<span class="verse"><span class="verse-num">${v.verse}</span> <span class="verse-text">${text}</span> </span>`;
             });
             document.getElementById("readerContent").innerHTML = versesHtml;
             
@@ -2022,6 +2165,9 @@
             document.getElementById("readerOverlay").classList.add("active");
             document.body.style.overflow = "hidden";
             
+            // Sync the goto selectors to current chapter
+            syncReaderGotoSelectors();
+            
             // Apply saved font size
             initFontSize();
             
@@ -2030,6 +2176,7 @@
         }
         
         function closeReader() {
+            stopChapterAudio();  // Stop audio when closing
             document.getElementById("readerOverlay").classList.remove("active");
             document.body.style.overflow = "";
             currentReaderChapter = null;
@@ -2080,6 +2227,7 @@
             const targetKey = direction === 'prev' ? chapter.prev : chapter.next;
             
             if (targetKey) {
+                stopChapterAudio();  // Stop audio when navigating
                 openReader(targetKey);
             }
         }
@@ -2094,8 +2242,178 @@
                 navigateChapter('prev');
             } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
                 navigateChapter('next');
+            } else if (event.key === " " && !event.target.matches('input')) {
+                // Spacebar toggles audio
+                event.preventDefault();
+                toggleChapterAudio();
             }
         });
+        
+        // =====================================================
+        // CHAPTER AUDIO (TTS) - Streaming Edge TTS via server
+        // =====================================================
+        
+        let chapterAudio = null;
+        let isAudioLoading = false;
+        let mediaSource = null;
+        let sourceBuffer = null;
+        let audioQueue = [];
+        let isAppending = false;
+        
+        async function toggleChapterAudio() {
+            const btn = document.getElementById("btnPlayChapter");
+            
+            // If already playing, pause
+            if (chapterAudio && !chapterAudio.paused) {
+                chapterAudio.pause();
+                btn.textContent = "▶";
+                btn.classList.remove("playing");
+                return;
+            }
+            
+            // If paused, resume
+            if (chapterAudio && chapterAudio.paused && chapterAudio.currentTime > 0) {
+                chapterAudio.play();
+                btn.textContent = "⏸";
+                btn.classList.add("playing");
+                return;
+            }
+            
+            // Otherwise, load and play
+            if (isAudioLoading) return;
+            
+            if (!currentReaderChapter || !chaptersData) {
+                console.error("No chapter loaded");
+                return;
+            }
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            if (!chapter) return;
+            
+            // Build full chapter text (strip punctuation that TTS mispronounces)
+            const text = chapter.verses.map(v => v.text).join(" ")
+                .replace(/\*/g, '')
+                .replace(/\[|\]/g, '')
+                .replace(/[\u2018\u2019\u201A\u201B\u201C\u201D\u201E\u201F\u00AB\u00BB"']/g, '')
+                .replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase())  // ALL CAPS → Title case
+                .replace(/\s+/g, ' ')
+                .trim();
+            
+            // Show loading state
+            isAudioLoading = true;
+            btn.textContent = "⏳";
+            btn.classList.add("loading");
+            
+            try {
+                // Stop any existing audio
+                stopChapterAudio();
+                
+                // Fetch with streaming
+                const response = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, chapter: currentReaderChapter })
+                });
+                
+                if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
+                
+                // Use MediaSource for true streaming playback
+                const mediaSource = new MediaSource();
+                chapterAudio = new Audio();
+                chapterAudio.src = URL.createObjectURL(mediaSource);
+                setupAudioEvents(btn);
+                
+                mediaSource.addEventListener('sourceopen', async () => {
+                    const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+                    const reader = response.body.getReader();
+                    let started = false;
+                    
+                    const appendQueue = [];
+                    let isAppending = false;
+                    
+                    const processQueue = () => {
+                        if (isAppending || appendQueue.length === 0) return;
+                        if (sourceBuffer.updating) return;
+                        
+                        isAppending = true;
+                        const chunk = appendQueue.shift();
+                        try {
+                            sourceBuffer.appendBuffer(chunk);
+                        } catch (e) {
+                            console.error("Append error:", e);
+                            isAppending = false;
+                        }
+                    };
+                    
+                    sourceBuffer.addEventListener('updateend', () => {
+                        isAppending = false;
+                        processQueue();
+                        
+                        // Start playback after first chunk appended
+                        if (!started && chapterAudio.paused) {
+                            started = true;
+                            chapterAudio.play().catch(e => console.error("Play failed:", e));
+                            btn.textContent = "⏸";
+                            btn.classList.remove("loading");
+                            btn.classList.add("playing");
+                        }
+                    });
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        appendQueue.push(value);
+                        processQueue();
+                    }
+                    
+                    // Wait for queue to drain, then end stream
+                    const waitForQueue = () => {
+                        if (appendQueue.length === 0 && !sourceBuffer.updating) {
+                            if (mediaSource.readyState === 'open') {
+                                mediaSource.endOfStream();
+                            }
+                        } else {
+                            setTimeout(waitForQueue, 100);
+                        }
+                    };
+                    waitForQueue();
+                });
+                
+            } catch (error) {
+                console.error("TTS error:", error);
+                btn.textContent = "❌";
+                setTimeout(() => { btn.textContent = "▶"; }, 2000);
+            } finally {
+                isAudioLoading = false;
+                btn.classList.remove("loading");
+            }
+        }
+        
+        function setupAudioEvents(btn) {
+            chapterAudio.onended = () => {
+                btn.textContent = "▶";
+                btn.classList.remove("playing");
+            };
+            chapterAudio.onerror = (e) => {
+                console.error("Audio error:", e);
+                btn.textContent = "▶";
+                btn.classList.remove("playing", "loading");
+            };
+        }
+        
+        function stopChapterAudio() {
+            if (chapterAudio) {
+                chapterAudio.pause();
+                chapterAudio.currentTime = 0;
+                try { URL.revokeObjectURL(chapterAudio.src); } catch(e) {}
+                chapterAudio = null;
+            }
+            const btn = document.getElementById("btnPlayChapter");
+            if (btn) {
+                btn.textContent = "▶";
+                btn.classList.remove("playing", "loading");
+            }
+        }
         
         // Load chapters data on startup
         loadChapters();

@@ -108,6 +108,37 @@ Kindle-style reader for reading full chapter text with navigation.
 - Keyboard shortcuts: ←/→ navigate, Esc closes
 - Opens from: double-click chapter in Network, click chapter in Concordance
 
+### ~~Voice Reader (TTS)~~ ✅ COMPLETED (2026-02-02)
+Text-to-speech for listening to Bible chapters.
+
+**Implementation:**
+- `server.py` - Added `/api/tts` endpoint using Edge TTS (Microsoft's free TTS API)
+- Voice: `en-IE-EmilyNeural` (Irish English female)
+- Play button (▶) in reader modal header
+
+**Features:**
+- Click play to hear the full chapter read aloud
+- Pause/resume support
+- Button states: ▶ (ready), ⏳ (loading), ⏸ (playing), ❌ (error)
+- Audio stops automatically when navigating or closing reader
+
+**Technical Notes:**
+The initial streaming implementation using manual HTTP chunked encoding (`Transfer-Encoding: chunked` with manually written chunk headers) failed silently in browsers. The browser's fetch API wasn't properly decoding the manually-chunked audio data.
+
+**Solution:** Buffer the complete audio on the server, then send with `Content-Length` header instead of streaming. This sacrifices immediate playback start (must wait for full generation) but ensures reliable cross-browser compatibility.
+
+```python
+# Working approach (buffered):
+audio_data = await generate_audio(text)  # Buffer all chunks
+self.send_header('Content-Length', str(len(audio_data)))
+self.wfile.write(audio_data)
+
+# Broken approach (manual chunked - DON'T USE):
+self.send_header('Transfer-Encoding', 'chunked')
+for chunk in stream:
+    self.wfile.write(f"{len(chunk):X}\r\n".encode())  # Browser can't decode this
+```
+
 ### Other Potential Enhancements
 
 1. **Verse-level summaries** - 31,000 verses instead of 1,189 chapters (35+ hours LLM time, needs UI pagination)

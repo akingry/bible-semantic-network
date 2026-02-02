@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Semantic Network</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            color: #c9d1d9;
+            overflow: hidden;
+        }
+        
+        #container { width: 100vw; height: 100vh; position: relative; }
+        #graph { width: 100%; height: 100%; }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        #controls h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: #58a6ff;
+        }
+        
+        .subtitle {
+            font-size: 0.75em;
+            color: #8b949e;
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin: 10px 0 4px;
+            font-size: 0.85em;
+            color: #8b949e;
+        }
+        
+        input[type="range"] { width: 100%; margin: 5px 0; }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        
+        .value { color: #58a6ff; float: right; }
+        
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            font-size: 0.85em;
+        }
+        
+        #legend h3 { margin-bottom: 10px; color: #58a6ff; font-size: 1em; }
+        
+        #legend kbd {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            font-family: monospace;
+            margin-right: 6px;
+        }
+        
+        .touch-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .touch-btn {
+            flex: 1;
+            padding: 10px 12px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .touch-btn:hover, .touch-btn:active {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            #controls {
+                max-width: 250px;
+                padding: 15px;
+                font-size: 0.9em;
+            }
+            
+            #nodePanel {
+                display: none; /* Hide on mobile - too cramped */
+            }
+            
+            #legend {
+                bottom: auto;
+                top: auto;
+                right: 20px;
+                left: auto;
+                bottom: 20px;
+            }
+            
+            #stats {
+                font-size: 0.8em;
+                padding: 10px 15px;
+            }
+            
+            .touch-btn {
+                padding: 12px 15px;
+                font-size: 1em;
+            }
+            
+            #legend kbd {
+                display: none; /* Hide keyboard hints on mobile */
+            }
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+        }
+        
+        .legend-circle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .legend-rect {
+            width: 18px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            font-size: 0.85em;
+        }
+        
+        #stats div { margin: 4px 0; }
+        #stats .num { color: #58a6ff; font-weight: 600; }
+        
+        #nodePanel {
+            position: absolute;
+            top: 140px;
+            right: 20px;
+            width: 200px;
+            max-height: calc(100vh - 180px);
+            background: rgba(22, 27, 34, 0.95);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #nodePanel h3 {
+            padding: 12px 15px;
+            margin: 0;
+            font-size: 0.95em;
+            color: #58a6ff;
+            border-bottom: 1px solid #30363d;
+            flex-shrink: 0;
+        }
+        
+        #nodePanelList {
+            overflow-y: auto;
+            flex: 1;
+            padding: 8px 0;
+        }
+        
+        .panel-node {
+            padding: 6px 15px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-node:hover:not(.in-path) {
+            background: rgba(88, 166, 255, 0.15);
+        }
+        
+        .panel-node.in-path {
+            opacity: 0.4;
+            cursor: default;
+        }
+        
+        .panel-node .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .panel-node.chapter .dot {
+            border-radius: 2px;
+            width: 12px;
+            height: 8px;
+        }
+        
+        .panel-node .name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .panel-section {
+            padding: 4px 15px;
+            font-size: 0.75em;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+        
+        .panel-section:first-child {
+            margin-top: 0;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(22, 27, 34, 0.98);
+            border: 1px solid #58a6ff;
+            border-radius: 10px;
+            padding: 14px 18px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            max-width: 350px;
+            z-index: 200;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        #tooltip h3 { color: #58a6ff; margin-bottom: 6px; text-transform: capitalize; }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .role-badge.subject { background: #f0883e; color: #fff; }
+        .role-badge.verb { background: #a371f7; color: #fff; }
+        .role-badge.object { background: #3fb950; color: #fff; }
+        .role-badge.modifier { background: #58a6ff; color: #fff; }
+        .role-badge.chapter { background: #f85149; color: #fff; }
+        
+        #tooltip .stat { margin: 4px 0; font-size: 0.9em; }
+        #tooltip .summary { margin-top: 8px; font-style: italic; color: #c9d1d9; }
+        #tooltip .chapters-list { margin-top: 8px; font-size: 0.8em; color: #8b949e; }
+        
+        .link { stroke-opacity: 0.4; }
+        .link.highlighted { stroke: #58a6ff !important; stroke-opacity: 1; }
+        
+        .node { cursor: pointer; }
+        .node.dimmed { opacity: 0.1; }
+        .node.selected circle, .node.selected rect { 
+            stroke: #fff; 
+            stroke-width: 3; 
+        }
+        .node.in-path circle, .node.in-path rect {
+            stroke: #58a6ff;
+            stroke-width: 2.5;
+        }
+        .node.next-in-chain circle { 
+            stroke: #ffd700; 
+            stroke-width: 3; 
+            stroke-dasharray: 4 2;
+        }
+        .node.next-in-chain rect { 
+            stroke: #ffd700; 
+            stroke-width: 2; 
+            stroke-dasharray: 3 2;
+        }
+        .node.search-highlight circle, .node.search-highlight rect {
+            stroke: #fff;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 8px #fff);
+        }
+        .node text {
+            font-size: 9px;
+            fill: #fff;
+            pointer-events: none;
+            text-shadow: 0 0 4px #0d1117, 0 0 8px #0d1117;
+            text-anchor: middle;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3em;
+            color: #58a6ff;
+        }
+        
+        /* Mode Toggle Tabs */
+        .mode-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 10px 12px;
+            background: #21262d;
+            color: #8b949e;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .mode-tab:first-child {
+            border-right: 1px solid #30363d;
+        }
+        
+        .mode-tab.active {
+            background: #238636;
+            color: #fff;
+        }
+        
+        .mode-tab:hover:not(.active) {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        
+        /* Concordance Mode */
+        #concordanceView {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            overflow: hidden;
+        }
+        
+        #concordanceView.active {
+            display: flex;
+        }
+        
+        #concordanceControls {
+            width: 350px;
+            padding: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #concordanceResults {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+        
+        .conc-search-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .conc-search-box input {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 1.1em;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+        
+        .conc-search-box input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        
+        .conc-search-box button {
+            padding: 12px 20px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        
+        .conc-search-box button:hover {
+            background: #2ea043;
+        }
+        
+        .conc-stats {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .conc-stats strong {
+            color: #58a6ff;
+        }
+        
+        .conc-word-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .conc-word-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .conc-word-item:hover {
+            background: rgba(88, 166, 255, 0.15);
+        }
+        
+        .conc-word-item.selected {
+            background: #238636;
+            color: #fff;
+        }
+        
+        .conc-word-item .count {
+            font-size: 0.8em;
+            color: #8b949e;
+            background: #21262d;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .conc-word-item.selected .count {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        
+        .conc-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        
+        .conc-tab {
+            flex: 1;
+            padding: 8px 6px;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .conc-tab:hover:not(.active) {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        
+        .conc-tab.active {
+            background: #238636;
+            color: #fff;
+            border-color: #238636;
+        }
+        
+        /* Results */
+        .result-header {
+            margin-bottom: 20px;
+        }
+        
+        .result-header h2 {
+            color: #58a6ff;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+        
+        .result-header .result-count {
+            color: #8b949e;
+            font-size: 0.95em;
+        }
+        
+        .result-card {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        
+        .result-card:hover {
+            border-color: #58a6ff;
+            background: rgba(30, 35, 42, 0.95);
+            transform: translateY(-1px);
+            cursor: pointer;
+        }
+        
+        .result-chapter {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 4px;
+        }
+        
+        .result-summary {
+            color: #c9d1d9;
+            font-style: italic;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        .result-verse {
+            background: #161b22;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #8b949e;
+            border-left: 3px solid #30363d;
+        }
+        
+        .result-verse .ref {
+            color: #a371f7;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        
+        .result-verse .highlight {
+            background: rgba(88, 166, 255, 0.3);
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        
+        .result-occurrences {
+            font-size: 0.8em;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8b949e;
+        }
+        
+        .no-results h3 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        
+        /* Mobile Concordance */
+        @media (max-width: 768px) {
+            #concordanceControls {
+                width: 100%;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+            }
+            
+            #concordanceView.active {
+                flex-direction: column;
+            }
+        }
+        
+        /* =====================================================
+           CHAPTER READER (Kindle-style)
+           ===================================================== */
+        
+        #readerOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        #readerOverlay.active {
+            display: flex;
+        }
+        
+        #readerContainer {
+            background: #faf8f5;
+            color: #2c2c2c;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        
+        #readerHeader {
+            background: #f0ebe3;
+            padding: 15px 25px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        #readerTitle {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #5c4033;
+        }
+        
+        #readerSummary {
+            font-size: 0.85em;
+            color: #8b7355;
+            font-style: italic;
+            margin-top: 4px;
+        }
+        
+        #readerClose {
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: #8b7355;
+            cursor: pointer;
+            padding: 0 10px;
+            line-height: 1;
+        }
+        
+        #readerClose:hover {
+            color: #5c4033;
+        }
+        
+        .font-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 15px;
+        }
+        
+        .font-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .font-btn:hover {
+            background: #7a5a45;
+        }
+        
+        .font-size-label {
+            font-size: 0.8em;
+            color: #8b7355;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        .play-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-right: 15px;
+        }
+        
+        .play-btn:hover {
+            background: #7a5a45;
+            transform: scale(1.05);
+        }
+        
+        .play-btn.loading {
+            background: #8b7355;
+            cursor: wait;
+        }
+        
+        .play-btn.playing {
+            background: #2d5a27;
+        }
+        
+        #readerContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 1.15em;
+            line-height: 1.9;
+        }
+        
+        .verse {
+            margin-bottom: 0.5em;
+            text-align: justify;
+        }
+        
+        .verse-num {
+            font-size: 0.7em;
+            color: #b8860b;
+            font-weight: 600;
+            vertical-align: super;
+            margin-right: 3px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .verse-text {
+            color: #2c2c2c;
+        }
+        
+        #readerNav {
+            background: #f0ebe3;
+            padding: 15px 25px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        #readerGoto {
+            background: #f0ebe3;
+            padding: 10px 25px 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #readerGoto select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        #readerGoto button {
+            padding: 6px 14px;
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        #readerGoto button:hover {
+            background: #7a5a45;
+        }
+        
+        .nav-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            background: #7a5a45;
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            color: #888;
+            cursor: not-allowed;
+        }
+        
+        .nav-btn.prev::before {
+            content: "←";
+        }
+        
+        .nav-btn.next::after {
+            content: "→";
+        }
+        
+        #readerPosition {
+            font-size: 0.85em;
+            color: #8b7355;
+        }
+        
+        /* Mobile Reader */
+        @media (max-width: 600px) {
+            #readerContent {
+                padding: 20px 25px;
+                font-size: 1.05em;
+            }
+            
+            #readerHeader, #readerNav {
+                padding: 12px 15px;
+            }
+            
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">Loading semantic network...</div>
+        <svg id="graph"></svg>
+        
+        <!-- Concordance View (hidden by default) -->
+        <div id="concordanceView">
+            <div id="concordanceControls">
+                <h1 style="color:#58a6ff;margin-bottom:5px;font-size:1.2em;">📖 Bible Concordance</h1>
+                <div class="subtitle" style="margin-bottom:15px;">Search the full text of Scripture</div>
+                
+                <div class="mode-tabs">
+                    <button class="mode-tab" onclick="setMode('network')">🕸️ Network</button>
+                    <button class="mode-tab active" onclick="setMode('concordance')">📚 Concordance</button>
+                </div>
+                
+                <div class="conc-search-box">
+                    <input type="text" id="concSearch" placeholder="pharisee, covenant, glory..." onkeydown="if(event.key==='Enter')doConcordanceSearch()">
+                    <button onclick="doConcordanceSearch()">Search</button>
+                </div>
+                
+                <div class="conc-stats" id="concStats">
+                    Type a word to search all <strong>31,102</strong> verses
+                </div>
+                
+                <div class="conc-tabs">
+                    <button class="conc-tab active" onclick="setConcordanceTab('count')">📊 Count</button>
+                    <button class="conc-tab" onclick="setConcordanceTab('people')">👤 People</button>
+                    <button class="conc-tab" onclick="setConcordanceTab('places')">📍 Places</button>
+                </div>
+                
+                <div class="conc-word-list" id="concWordList">
+                    <!-- Words will be listed here -->
+                </div>
+            </div>
+            
+            <div id="concordanceResults">
+                <div class="no-results">
+                    <h3>🔍 Search the Bible</h3>
+                    <p>Enter a word to find every chapter where it appears, with verse context.</p>
+                    <p style="margin-top:10px;font-size:0.9em;">Unlike the Network view (which searches 5-word summaries),<br>Concordance searches the actual Bible text.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chapter Reader Overlay -->
+        <div id="readerOverlay" onclick="if(event.target === this) closeReader()">
+            <div id="readerContainer">
+                <div id="readerHeader">
+                    <div>
+                        <div id="readerTitle">Genesis 1</div>
+                        <div id="readerSummary">"God creates heavens and earth slowly."</div>
+                    </div>
+                    <div style="display:flex;align-items:center;">
+                        <button class="play-btn" id="btnPlayChapter" onclick="toggleChapterAudio()" title="Listen to chapter">
+                            ▶
+                        </button>
+                        <div class="font-controls">
+                            <button class="font-btn" onclick="adjustFontSize(-1)" title="Decrease font size">−</button>
+                            <span class="font-size-label" id="fontSizeLabel">100%</span>
+                            <button class="font-btn" onclick="adjustFontSize(1)" title="Increase font size">+</button>
+                        </div>
+                        <button id="readerClose" onclick="closeReader()" title="Close (Esc)">×</button>
+                    </div>
+                </div>
+                <div id="readerContent">
+                    <!-- Verses will be inserted here -->
+                </div>
+                <div id="readerNav">
+                    <button class="nav-btn prev" id="btnPrevChapter" onclick="navigateChapter('prev')">Previous</button>
+                    <div id="readerPosition">Chapter 1 of 50</div>
+                    <button class="nav-btn next" id="btnNextChapter" onclick="navigateChapter('next')">Next</button>
+                </div>
+                <div id="readerGoto">
+                    <select id="readerGotoBook"></select>
+                    <select id="readerGotoChapter"></select>
+                    <button onclick="gotoSelectedChapter('reader')">Go</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <h1>📖 Bible Semantic Network</h1>
+            <div class="subtitle">Subjects → Actions → Objects → Chapters</div>
+            
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="setMode('network')">🕸️ Network</button>
+                <button class="mode-tab" onclick="setMode('concordance')">📚 Concordance</button>
+            </div>
+            
+            <label>Search:</label>
+            <div style="display:flex;gap:5px;margin-top:5px;">
+                <input type="text" id="search" placeholder="god, abraham..." style="flex:1;" onkeydown="if(event.key==='Enter')doSearch()">
+                <button onclick="doSearch()" style="padding:6px 12px;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;">Go</button>
+            </div>
+            
+            <label>Filter by Book:</label>
+            <select id="bookFilter"><option value="">All Books</option></select>
+            
+            <div class="goto-chapter">
+                <label>Go to Chapter:</label>
+                <div style="display:flex;gap:5px;margin-top:5px;">
+                    <select id="gotoBook" style="flex:2;"></select>
+                    <select id="gotoChapter" style="flex:1;"></select>
+                    <button onclick="gotoSelectedChapter()" style="padding:6px 10px;background:#8b5cf6;color:#fff;border:none;border-radius:6px;cursor:pointer;">📖</button>
+                </div>
+            </div>
+            
+            <label>Show Roles:</label>
+            <div style="margin-top:5px;">
+                <label style="display:inline;margin:0;"><input type="checkbox" id="showSubjects" checked> Subjects</label>
+                <label style="display:inline;margin:0 0 0 8px;"><input type="checkbox" id="showVerbs" checked> Verbs</label>
+            </div>
+            <div style="margin-top:5px;">
+                <label style="display:inline;margin:0;"><input type="checkbox" id="showObjects" checked> Objects</label>
+            </div>
+            
+        </div>
+        
+        <div id="legend">
+            <h3>Node Types</h3>
+            <div class="legend-item"><div class="legend-circle" style="background:#f0883e;"></div>Subject</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#a371f7;"></div>Verb</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#3fb950;"></div>Object</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#58a6ff;"></div>Modifier</div>
+            <div class="legend-item"><div class="legend-rect" style="background:#f85149;"></div>Chapter</div>
+            
+            <h3 style="margin-top:15px;">Controls</h3>
+            <div class="legend-item"><kbd>Double-click</kbd> Read chapter</div>
+            <div class="legend-item"><kbd>Backspace</kbd> Go back</div>
+            <div class="legend-item"><kbd>Esc</kbd> Reset</div>
+            <div class="touch-buttons">
+                <button id="btnBack" class="touch-btn">← Back</button>
+                <button id="btnReset" class="touch-btn">Reset</button>
+            </div>
+        </div>
+        
+        <div id="stats">
+            <div>Subjects: <span class="num" id="subjectCount">-</span></div>
+            <div>Verbs: <span class="num" id="verbCount">-</span></div>
+            <div>Objects: <span class="num" id="objectCount">-</span></div>
+            <div>Chapters: <span class="num" id="chapterCount">-</span></div>
+        </div>
+        
+        <div id="nodePanel">
+            <h3>Active Nodes</h3>
+            <div id="nodePanelList"></div>
+        </div>
+        
+        <div id="tooltip"></div>
+    </div>
+    
+    <script>
+        // Colors by role
+        const ROLE_COLORS = {
+            subject: '#f0883e',    // Orange - actors
+            verb: '#a371f7',       // Purple - actions
+            object: '#3fb950',     // Green - objects
+            modifier: '#58a6ff',   // Blue - modifiers
+            chapter: '#f85149'     // Red - chapters
+        };
+        
+        // Config
+        let minCount = 1;
+        let repulsionForce = -400;
+        let selectedBook = "";
+        let searchTerm = "";
+        let showRoles = { subject: true, verb: true, object: true, modifier: true };
+        let selectedNode = null;  // Currently clicked/locked node
+        let navigationPath = [];  // Track the chain of clicked nodes [node1, node2, ...]
+        
+        let allData = null;
+        let simulation = null;
+        let currentNodes = [];  // Store current rendered nodes for search
+        
+        const svg = d3.select("#graph");
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        svg.attr("width", width).attr("height", height);
+        
+        const g = svg.append("g");
+        
+        const zoom = d3.zoom()
+            .scaleExtent([0.05, 5])
+            .on("zoom", (event) => g.attr("transform", event.transform));
+        svg.call(zoom);
+        
+        const tooltip = d3.select("#tooltip");
+        
+        function nodeRadius(node) {
+            if (node.type === 'chapter') return 6;
+            // Subjects larger, verbs medium, objects/modifiers smaller
+            const base = node.role === 'subject' ? 4 : node.role === 'verb' ? 3 : 2.5;
+            return Math.sqrt(node.count) * base + 5;
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch("network_data.json");
+                allData = await response.json();
+                
+                // Bible book order
+                const BIBLE_ORDER = [
+                    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
+                    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
+                    "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles",
+                    "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs",
+                    "Ecclesiastes", "Song Of Solomon", "Isaiah", "Jeremiah",
+                    "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+                    "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
+                    "Haggai", "Zechariah", "Malachi",
+                    "Matthew", "Mark", "Luke", "John", "Acts", "Romans",
+                    "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+                    "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
+                    "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews",
+                    "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
+                    "Jude", "Revelation"
+                ];
+                
+                const bookSelect = document.getElementById("bookFilter");
+                const sortedBooks = allData.meta.books.slice().sort((a, b) => {
+                    const aIdx = BIBLE_ORDER.indexOf(a);
+                    const bIdx = BIBLE_ORDER.indexOf(b);
+                    if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+                    if (aIdx === -1) return 1;
+                    if (bIdx === -1) return -1;
+                    return aIdx - bIdx;
+                });
+                
+                sortedBooks.forEach(book => {
+                    const opt = document.createElement("option");
+                    opt.value = book;
+                    opt.textContent = book;
+                    bookSelect.appendChild(opt);
+                });
+                
+                document.getElementById("loading").style.display = "none";
+                renderNetwork();
+            } catch (error) {
+                document.getElementById("loading").textContent = "Error: Run build_network.py first";
+                console.error(error);
+            }
+        }
+        
+        function renderNetwork() {
+            // Reset selection when re-rendering
+            selectedNode = null;
+            navigationPath = [];
+            
+            // Filter chapters by book
+            let chapters = allData.nodes.filter(n => n.type === 'chapter');
+            if (selectedBook) {
+                chapters = chapters.filter(n => n.book === selectedBook);
+            }
+            const chapterIds = new Set(chapters.map(n => n.id));
+            
+            // Find words that ACTUALLY appear in the selected chapters' chains
+            const connectedWords = new Set();
+            chapters.forEach(ch => {
+                if (ch.chain) {
+                    ch.chain.forEach(word => connectedWords.add(word));
+                }
+            });
+            
+            // Build relevant links from the actual chains
+            const relevantLinks = new Set();
+            chapters.forEach(ch => {
+                if (ch.chain && ch.chain.length > 0) {
+                    // Links between consecutive words in the chain
+                    for (let i = 0; i < ch.chain.length - 1; i++) {
+                        relevantLinks.add(JSON.stringify({
+                            source: ch.chain[i],
+                            target: ch.chain[i + 1],
+                            weight: 1
+                        }));
+                    }
+                    // Link from last word to chapter
+                    relevantLinks.add(JSON.stringify({
+                        source: ch.chain[ch.chain.length - 1],
+                        target: ch.id,
+                        weight: 1
+                    }));
+                }
+            });
+            
+            // Filter words by role visibility
+            let words = allData.nodes.filter(n => 
+                n.type === 'word' && 
+                connectedWords.has(n.id) &&
+                showRoles[n.role]
+            );
+            
+            // Search filter
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                const matchIds = new Set();
+                
+                // Find matching nodes
+                words.forEach(n => {
+                    if (n.id.includes(term)) matchIds.add(n.id);
+                });
+                chapters.forEach(n => {
+                    if (n.id.toLowerCase().includes(term)) matchIds.add(n.id);
+                });
+                
+                // Expand to connected
+                allData.links.forEach(link => {
+                    if (matchIds.has(link.source)) matchIds.add(link.target);
+                    if (matchIds.has(link.target)) matchIds.add(link.source);
+                });
+                
+                words = words.filter(n => matchIds.has(n.id));
+                chapters = chapters.filter(n => matchIds.has(n.id));
+            }
+            
+            const filteredNodes = [...words, ...chapters];
+            const nodeIds = new Set(filteredNodes.map(n => n.id));
+            
+            // Parse and filter links
+            const filteredLinks = [];
+            relevantLinks.forEach(linkStr => {
+                const link = JSON.parse(linkStr);
+                if (nodeIds.has(link.source) && nodeIds.has(link.target)) {
+                    filteredLinks.push(link);
+                }
+            });
+            
+            // Update stats
+            document.getElementById("subjectCount").textContent = words.filter(n => n.role === 'subject').length;
+            document.getElementById("verbCount").textContent = words.filter(n => n.role === 'verb').length;
+            document.getElementById("objectCount").textContent = words.filter(n => n.role === 'object').length + 
+                words.filter(n => n.role === 'modifier').length;
+            document.getElementById("chapterCount").textContent = chapters.length;
+            
+            g.selectAll("*").remove();
+            
+            if (filteredNodes.length === 0) return;
+            
+            const simNodes = filteredNodes.map(d => ({...d}));
+            const simLinks = filteredLinks.map(d => ({...d}));
+            
+            // Store for search access
+            currentNodes = simNodes;
+            
+            // Build lookup tables for fast path queries
+            buildLookupTables(simNodes, simLinks);
+            
+            simulation = d3.forceSimulation(simNodes)
+                .force("link", d3.forceLink(simLinks)
+                    .id(d => d.id)
+                    .distance(35))
+                .force("charge", d3.forceManyBody().strength(repulsionForce))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(d => nodeRadius(d) + 2));
+            
+            // Links colored by source role
+            const link = g.append("g")
+                .selectAll("line")
+                .data(simLinks)
+                .enter().append("line")
+                .attr("class", "link")
+                .attr("stroke", d => {
+                    const sourceNode = simNodes.find(n => n.id === d.source.id || n.id === d.source);
+                    return sourceNode ? ROLE_COLORS[sourceNode.role] || '#30363d' : '#30363d';
+                })
+                .attr("stroke-width", d => Math.sqrt(d.weight) * 0.8 + 0.5);
+            
+            const node = g.append("g")
+                .selectAll("g")
+                .data(simNodes)
+                .enter().append("g")
+                .attr("class", d => `node ${d.type}`)
+                .on("mouseover", (event, d) => showTooltip(event, d))
+                .on("mouseout", () => hideTooltip())
+                .on("click", (event, d) => {
+                    event.stopPropagation();
+                    
+                    // Ignore clicks on dimmed/inactive nodes
+                    const isDimmed = d3.select(event.currentTarget).classed("dimmed");
+                    if (isDimmed) {
+                        return;
+                    }
+                    
+                    if (selectedNode && selectedNode.id === d.id) {
+                        // Clicking same node - go back one step or deselect
+                        if (navigationPath.length > 1) {
+                            navigationPath.pop();
+                            selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                            highlightPath(navigationPath, simNodes, simLinks, node, link);
+                        } else {
+                            // Reset completely
+                            navigationPath = [];
+                            selectedNode = null;
+                            resetHighlight(node, link);
+                        }
+                    } else if (navigationPath.length > 0) {
+                        // Check if this node is a valid next step in the chain
+                        const validNext = getValidNextNodes(navigationPath, simNodes, simLinks);
+                        if (validNext.has(d.id)) {
+                            // Add to path
+                            navigationPath.push(d.id);
+                            selectedNode = d;
+                            highlightPath(navigationPath, simNodes, simLinks, node, link);
+                        }
+                        // If not valid next, do nothing
+                    } else {
+                        // Start new path
+                        navigationPath = [d.id];
+                        selectedNode = d;
+                        highlightPath(navigationPath, simNodes, simLinks, node, link);
+                    }
+                })
+                .on("dblclick", (event, d) => {
+                    // Double-click on chapter opens reader
+                    if (d.type === 'chapter') {
+                        event.stopPropagation();
+                        openReader(d.id);
+                    }
+                })
+                .on("contextmenu", (event) => {
+                    // Right click releases the chain
+                    event.preventDefault();
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                    g.selectAll(".node").classed("search-highlight", false);
+                });
+            
+            // Keyboard shortcuts
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    // Reset everything
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                    g.selectAll(".node").classed("search-highlight", false);
+                } else if (event.key === "Backspace" && !event.target.matches('input')) {
+                    // Go back one step
+                    event.preventDefault();
+                    if (navigationPath.length > 1) {
+                        navigationPath.pop();
+                        selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                        highlightPath(navigationPath, simNodes, simLinks, node, link);
+                    } else if (navigationPath.length === 1) {
+                        navigationPath = [];
+                        selectedNode = null;
+                        resetHighlight(node, link);
+                    }
+                }
+            });
+            
+            // Right click on background also releases
+            svg.on("contextmenu", (event) => {
+                event.preventDefault();
+                navigationPath = [];
+                selectedNode = null;
+                resetHighlight(node, link);
+                g.selectAll(".node").classed("search-highlight", false);
+            });
+            
+            // Word nodes (circles)
+            node.filter(d => d.type === 'word')
+                .append("circle")
+                .attr("r", d => nodeRadius(d))
+                .attr("fill", d => ROLE_COLORS[d.role] || '#888')
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5);
+            
+            // Chapter nodes (rectangles)
+            node.filter(d => d.type === 'chapter')
+                .append("rect")
+                .attr("width", 10)
+                .attr("height", 7)
+                .attr("x", -5)
+                .attr("y", -3.5)
+                .attr("rx", 2)
+                .attr("fill", ROLE_COLORS.chapter)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+            
+            // Labels for subjects and high-count words
+            node.filter(d => d.type === 'word' && (d.role === 'subject' || d.count >= minCount * 3))
+                .append("text")
+                .text(d => d.id)
+                .attr("dy", d => nodeRadius(d) + 11);
+            
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+            
+            // Initialize node panel with all nodes
+            updateNodePanel(simNodes);
+            
+            // Touch button handlers
+            document.getElementById("btnBack").onclick = () => {
+                if (navigationPath.length > 1) {
+                    navigationPath.pop();
+                    selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                    highlightPath(navigationPath, simNodes, simLinks, node, link);
+                } else if (navigationPath.length === 1) {
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                }
+            };
+            
+            document.getElementById("btnReset").onclick = () => {
+                navigationPath = [];
+                selectedNode = null;
+                resetHighlight(node, link);
+                g.selectAll(".node").classed("search-highlight", false);
+            };
+        }
+        
+        // Pre-computed lookup tables (built once when data loads)
+        let chapterChains = {};   // chapter id -> array of words in its chain
+        let wordToChapters = {};  // word -> Set of chapter ids that ACTUALLY contain this word
+        let nodeOutgoing = {};    // node -> Set of nodes it points to
+        
+        function buildLookupTables(nodes, links) {
+            chapterChains = {};
+            wordToChapters = {};
+            nodeOutgoing = {};
+            
+            // Build outgoing edges map
+            links.forEach(l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                if (!nodeOutgoing[srcId]) nodeOutgoing[srcId] = new Set();
+                nodeOutgoing[srcId].add(tgtId);
+            });
+            
+            // Store each chapter's actual word chain
+            nodes.filter(n => n.type === 'chapter').forEach(ch => {
+                const chain = ch.chain || [];
+                chapterChains[ch.id] = chain;
+                
+                // Map each word to chapters that ACTUALLY contain it
+                chain.forEach(word => {
+                    if (!wordToChapters[word]) wordToChapters[word] = new Set();
+                    wordToChapters[word].add(ch.id);
+                });
+            });
+        }
+        
+        // Get chapters whose chain contains ALL words in the path
+        function getReachableChapters(path) {
+            if (path.length === 0) return new Set();
+            
+            const validChapters = new Set();
+            
+            // Check each chapter's actual chain
+            for (const [chapterId, chain] of Object.entries(chapterChains)) {
+                // All path words must be in this chapter's chain
+                let allFound = true;
+                for (const word of path) {
+                    if (!chain.includes(word)) {
+                        allFound = false;
+                        break;
+                    }
+                }
+                if (allFound) {
+                    validChapters.add(chapterId);
+                }
+            }
+            
+            return validChapters;
+        }
+        
+        // Get valid next nodes that maintain the path constraint
+        function getValidNextNodes(path, nodes, links) {
+            if (path.length === 0) return new Set();
+            
+            const lastNode = path[path.length - 1];
+            const validChapters = getReachableChapters(path);
+            
+            // Get direct outgoing from last node
+            const directNext = nodeOutgoing[lastNode] || new Set();
+            
+            // Filter to only nodes that lead to valid chapters
+            const validNext = new Set();
+            directNext.forEach(nextId => {
+                const nextNode = nodes.find(n => n.id === nextId);
+                if (nextNode && nextNode.type === 'chapter') {
+                    // It's a chapter - check if it's valid (contains all path words)
+                    if (validChapters.has(nextId)) {
+                        validNext.add(nextId);
+                    }
+                } else {
+                    // It's a word - check if adding it still has valid chapters
+                    const newPath = [...path, nextId];
+                    const stillValid = getReachableChapters(newPath);
+                    if (stillValid.size > 0) {
+                        validNext.add(nextId);
+                    }
+                }
+            });
+            
+            return validNext;
+        }
+        
+        // Highlight based on navigation path
+        function highlightPath(path, nodes, links, nodeSelection, linkSelection) {
+            if (path.length === 0) {
+                resetHighlight(nodeSelection, linkSelection);
+                return;
+            }
+            
+            const pathSet = new Set(path);
+            const lastNode = path[path.length - 1];
+            const validNext = getValidNextNodes(path, nodes, links);
+            
+            // Visible: path nodes + valid next nodes
+            const visible = new Set([...pathSet, ...validNext]);
+            
+            nodeSelection.classed("dimmed", n => !visible.has(n.id));
+            nodeSelection.classed("selected", n => n.id === lastNode);
+            nodeSelection.classed("next-in-chain", n => validNext.has(n.id));
+            nodeSelection.classed("in-path", n => pathSet.has(n.id) && n.id !== lastNode);
+            
+            // Highlight links in the path and from last node to valid next
+            linkSelection.classed("highlighted", l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                
+                // Link is in path
+                for (let i = 0; i < path.length - 1; i++) {
+                    if (path[i] === srcId && path[i + 1] === tgtId) return true;
+                }
+                
+                // Link from last node to valid next
+                if (srcId === lastNode && validNext.has(tgtId)) return true;
+                
+                return false;
+            });
+            
+            // Update node panel with visible nodes and path
+            const visibleNodes = nodes.filter(n => visible.has(n.id));
+            updateNodePanel(visibleNodes, path);
+        }
+        
+        function highlightConnected(d, nodes, links, nodeSelection, linkSelection, locked = false) {
+            const nextInChain = new Set();  // Nodes this one points TO (downstream)
+            
+            // Find downstream nodes (this node → target)
+            links.forEach(l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                if (srcId === d.id) {
+                    nextInChain.add(tgtId);
+                }
+            });
+            
+            if (locked) {
+                // Use path-based highlighting
+                highlightPath([d.id], nodes, links, nodeSelection, linkSelection);
+            } else {
+                // Hover: show selected + all directly connected (both directions)
+                const connected = new Set([d.id]);
+                links.forEach(l => {
+                    const srcId = l.source.id || l.source;
+                    const tgtId = l.target.id || l.target;
+                    if (srcId === d.id) connected.add(tgtId);
+                    if (tgtId === d.id) connected.add(srcId);
+                });
+                
+                nodeSelection.classed("dimmed", n => !connected.has(n.id));
+                nodeSelection.classed("selected", false);
+                nodeSelection.classed("next-in-chain", false);
+                nodeSelection.classed("in-path", false);
+                
+                linkSelection.classed("highlighted", l => {
+                    const srcId = l.source.id || l.source;
+                    const tgtId = l.target.id || l.target;
+                    return srcId === d.id || tgtId === d.id;
+                });
+            }
+        }
+        
+        function resetHighlight(nodeSelection, linkSelection) {
+            nodeSelection.classed("dimmed", false);
+            nodeSelection.classed("selected", false);
+            nodeSelection.classed("next-in-chain", false);
+            nodeSelection.classed("in-path", false);
+            linkSelection.classed("highlighted", false);
+            updateNodePanel(currentNodes);  // Show all nodes
+        }
+        
+        function updateNodePanel(visibleNodes, pathNodes = []) {
+            const panel = document.getElementById("nodePanelList");
+            panel.innerHTML = "";
+            
+            if (!visibleNodes || visibleNodes.length === 0) return;
+            
+            const pathSet = new Set(pathNodes);
+            
+            // Group by role/type
+            const subjects = visibleNodes.filter(n => n.type === 'word' && n.role === 'subject');
+            const verbs = visibleNodes.filter(n => n.type === 'word' && n.role === 'verb');
+            const objects = visibleNodes.filter(n => n.type === 'word' && (n.role === 'object' || n.role === 'modifier'));
+            const chapters = visibleNodes.filter(n => n.type === 'chapter');
+            
+            function addSection(title, nodes, color) {
+                if (nodes.length === 0) return;
+                
+                const section = document.createElement("div");
+                section.className = "panel-section";
+                section.textContent = title + " (" + nodes.length + ")";
+                panel.appendChild(section);
+                
+                // Sort: path nodes first (in path order), then by count
+                const pathNodesInSection = nodes.filter(n => pathSet.has(n.id));
+                const otherNodes = nodes.filter(n => !pathSet.has(n.id));
+                
+                // Sort path nodes by their position in the path
+                pathNodesInSection.sort((a, b) => pathNodes.indexOf(a.id) - pathNodes.indexOf(b.id));
+                
+                // Sort other nodes by count (descending) for words, alphabetically for chapters
+                if (nodes[0].type === 'chapter') {
+                    otherNodes.sort((a, b) => a.id.localeCompare(b.id));
+                } else {
+                    otherNodes.sort((a, b) => (b.count || 0) - (a.count || 0));
+                }
+                
+                const sortedNodes = [...pathNodesInSection, ...otherNodes];
+                
+                sortedNodes.forEach(n => {
+                    const isInPath = pathSet.has(n.id);
+                    const item = document.createElement("div");
+                    item.className = "panel-node" + (n.type === 'chapter' ? " chapter" : "") + (isInPath ? " in-path" : "");
+                    item.innerHTML = `<span class="dot" style="background:${color}"></span><span class="name">${n.id}</span>`;
+                    if (!isInPath) {
+                        item.onclick = () => panelNodeClick(n);
+                    }
+                    panel.appendChild(item);
+                });
+            }
+            
+            addSection("Subjects", subjects, ROLE_COLORS.subject);
+            addSection("Verbs", verbs, ROLE_COLORS.verb);
+            addSection("Objects", objects, ROLE_COLORS.object);
+            addSection("Chapters", chapters, ROLE_COLORS.chapter);
+        }
+        
+        function panelNodeClick(nodeData) {
+            // Find the node in currentNodes with position
+            const node = currentNodes.find(n => n.id === nodeData.id);
+            if (!node || node.x === undefined) return;
+            
+            // Zoom and center on the node
+            const scale = 3.5;
+            const x = width / 2 - node.x * scale;
+            const y = height / 2 - node.y * scale;
+            
+            svg.transition()
+                .duration(500)
+                .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+            
+            // Highlight the node
+            g.selectAll(".node").classed("search-highlight", false);
+            g.selectAll(".node")
+                .filter(n => n.id === node.id)
+                .classed("search-highlight", true);
+            
+            // Simulate a click on the node to continue/start chain
+            const nodeElement = g.selectAll(".node").filter(n => n.id === node.id);
+            if (!nodeElement.empty()) {
+                // Trigger the same logic as clicking the node
+                const isDimmed = nodeElement.classed("dimmed");
+                if (!isDimmed) {
+                    // Replicate click logic
+                    if (selectedNode && selectedNode.id === node.id) {
+                        if (navigationPath.length > 1) {
+                            navigationPath.pop();
+                            selectedNode = currentNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                            highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        } else {
+                            navigationPath = [];
+                            selectedNode = null;
+                            resetHighlight(g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        }
+                    } else if (navigationPath.length > 0) {
+                        const validNext = getValidNextNodes(navigationPath, currentNodes, simulation.force("link").links());
+                        if (validNext.has(node.id)) {
+                            navigationPath.push(node.id);
+                            selectedNode = node;
+                            highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        }
+                    } else {
+                        navigationPath = [node.id];
+                        selectedNode = node;
+                        highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                    }
+                }
+            }
+        }
+        
+        function showTooltip(event, d) {
+            const role = d.type === 'chapter' ? 'chapter' : d.role;
+            let html = `<h3>${d.id}</h3>`;
+            html += `<span class="role-badge ${role}">${role}</span>`;
+            
+            if (d.type === 'word') {
+                html += `<div class="stat">Appears in <strong>${d.count}</strong> summaries</div>`;
+                if (d.chapters && d.chapters.length > 0) {
+                    html += `<div class="chapters-list">${d.chapters.slice(0, 8).join(", ")}${d.chapters.length > 8 ? "..." : ""}</div>`;
+                }
+            } else {
+                html += `<div class="stat">Book: ${d.book}</div>`;
+                html += `<div class="summary">"${d.summary}"</div>`;
+            }
+            
+            tooltip.html(html)
+                .style("opacity", 1)
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+        
+        function hideTooltip() { tooltip.style("opacity", 0); }
+        
+        // Drag functions removed - nodes are static after settling
+        
+        // Event listeners
+        // Min usage slider removed - always use 1
+        
+        // Repulsion slider removed - fixed at 400
+        
+        document.getElementById("bookFilter").addEventListener("change", function() {
+            selectedBook = this.value;
+            renderNetwork();
+        });
+        
+        function doSearch() {
+            const searchInput = document.getElementById("search");
+            searchTerm = searchInput.value.toLowerCase().trim();
+            
+            console.log("Search:", searchTerm, "Nodes:", currentNodes.length);
+            
+            if (!searchTerm || currentNodes.length === 0) {
+                searchInput.style.borderColor = "#f85149";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+                return;
+            }
+            
+            // Find matching node (exact match first, then partial)
+            let match = currentNodes.find(n => n.id === searchTerm);
+            if (!match) {
+                match = currentNodes.find(n => n.id.includes(searchTerm));
+            }
+            
+            if (match && match.x !== undefined && match.y !== undefined) {
+                // Center and zoom closer on the node
+                const scale = 3.5;
+                const x = width / 2 - match.x * scale;
+                const y = height / 2 - match.y * scale;
+                
+                svg.transition()
+                    .duration(500)
+                    .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+                
+                // Highlight the found node in white
+                g.selectAll(".node").classed("search-highlight", false);  // Clear previous
+                g.selectAll(".node")
+                    .filter(n => n.id === match.id)
+                    .classed("search-highlight", true);
+                
+                // Flash green
+                searchInput.style.borderColor = "#3fb950";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+            } else {
+                // No match - flash red
+                searchInput.style.borderColor = "#f85149";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+            }
+        }
+        
+        // Search handlers are inline on the elements
+        
+        ['showSubjects', 'showVerbs', 'showObjects'].forEach(id => {
+            document.getElementById(id).addEventListener("change", function() {
+                if (id === 'showSubjects') showRoles['subject'] = this.checked;
+                if (id === 'showVerbs') showRoles['verb'] = this.checked;
+                if (id === 'showObjects') {
+                    showRoles['object'] = this.checked;
+                    showRoles['modifier'] = this.checked;
+                }
+                renderNetwork();
+            });
+        });
+        
+        window.addEventListener("resize", () => {
+            svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+            if (simulation) {
+                simulation.force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        // =====================================================
+        // CONCORDANCE MODE
+        // =====================================================
+        
+        let concordanceData = null;
+        let currentMode = 'network';
+        let selectedConcWord = null;
+        let currentConcTab = 'count';
+        
+        // Entity lists loaded from entities.json (extracted via spaCy NER)
+        let BIBLE_PEOPLE = [];
+        let BIBLE_PLACES = [];
+        
+        // False positives to filter out (spaCy mistakes)
+        const ENTITY_BLACKLIST = new Set([
+            'behold', 'arise', 'lo', 'alas', 'amen', 'selah', 'hallelujah',
+            'woe', 'hosanna', 'truly', 'verily', 'surely', 'therefore'
+        ]);
+        
+        async function loadEntities() {
+            try {
+                const response = await fetch("entities.json");
+                const data = await response.json();
+                BIBLE_PEOPLE = data.people.filter(p => !ENTITY_BLACKLIST.has(p));
+                BIBLE_PLACES = data.places.filter(p => !ENTITY_BLACKLIST.has(p));
+                console.log(`Loaded ${BIBLE_PEOPLE.length} people, ${BIBLE_PLACES.length} places`);
+            } catch (error) {
+                console.error("Could not load entities:", error);
+                // Fallback to empty lists
+                BIBLE_PEOPLE = [];
+                BIBLE_PLACES = [];
+            }
+        }
+        
+        async function loadConcordance() {
+            try {
+                const response = await fetch("concordance.json");
+                concordanceData = await response.json();
+                console.log("Concordance loaded:", concordanceData.meta);
+                
+                // Update stats
+                document.getElementById("concStats").innerHTML = 
+                    `<strong>${concordanceData.meta.total_words.toLocaleString()}</strong> indexed words across ` +
+                    `<strong>${concordanceData.meta.total_verses.toLocaleString()}</strong> verses`;
+                
+                // Show popular words
+                showPopularWords();
+            } catch (error) {
+                console.error("Could not load concordance:", error);
+                document.getElementById("concStats").innerHTML = 
+                    '<span style="color:#f85149;">Concordance not available. Run build_concordance.py first.</span>';
+            }
+        }
+        
+        function showPopularWords() {
+            if (!concordanceData) return;
+            
+            const wordList = document.getElementById("concWordList");
+            let words = [];
+            let headerText = '';
+            
+            if (currentConcTab === 'count') {
+                headerText = 'By chapter count:';
+                words = Object.entries(concordanceData.concordance)
+                    .map(([word, entries]) => ({ word, count: entries.length }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 100);
+            } else if (currentConcTab === 'people') {
+                headerText = 'Bible people (A-Z):';
+                words = BIBLE_PEOPLE
+                    .filter(p => concordanceData.concordance[p])
+                    .map(word => ({ word, count: concordanceData.concordance[word].length }))
+                    .sort((a, b) => a.word.localeCompare(b.word));
+            } else if (currentConcTab === 'places') {
+                headerText = 'Bible places (A-Z):';
+                words = BIBLE_PLACES
+                    .filter(p => concordanceData.concordance[p])
+                    .map(word => ({ word, count: concordanceData.concordance[word].length }))
+                    .sort((a, b) => a.word.localeCompare(b.word));
+            }
+            
+            wordList.innerHTML = `<div style="color:#8b949e;font-size:0.85em;margin-bottom:10px;">${headerText}</div>`;
+            
+            words.forEach(({ word, count }) => {
+                const item = document.createElement("div");
+                item.className = "conc-word-item" + (word === selectedConcWord ? " selected" : "");
+                item.dataset.word = word;  // Store exact word for matching
+                item.innerHTML = `<span>${word}</span><span class="count">${count}</span>`;
+                item.onclick = () => selectConcordanceWord(word);
+                wordList.appendChild(item);
+            });
+            
+            if (words.length === 0) {
+                wordList.innerHTML += '<div style="color:#8b949e;font-size:0.85em;padding:10px;">No matches found</div>';
+            }
+        }
+        
+        function setConcordanceTab(tab) {
+            currentConcTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll(".conc-tab").forEach(btn => {
+                const isActive = (tab === 'count' && btn.textContent.includes('Count')) ||
+                                 (tab === 'people' && btn.textContent.includes('People')) ||
+                                 (tab === 'places' && btn.textContent.includes('Places'));
+                btn.classList.toggle("active", isActive);
+            });
+            
+            // Refresh word list
+            showPopularWords();
+        }
+        
+        function doConcordanceSearch() {
+            const input = document.getElementById("concSearch");
+            const term = input.value.toLowerCase().trim();
+            
+            if (!term || !concordanceData) {
+                input.style.borderColor = "#f85149";
+                setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+                return;
+            }
+            
+            // Try exact match first
+            let word = term;
+            if (!concordanceData.concordance[word]) {
+                // Try partial match
+                const matches = Object.keys(concordanceData.concordance)
+                    .filter(w => w.includes(term))
+                    .sort((a, b) => a.length - b.length);  // Shortest match first
+                
+                if (matches.length > 0) {
+                    word = matches[0];
+                } else {
+                    // No match
+                    showNoResults(term);
+                    input.style.borderColor = "#f85149";
+                    setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+                    return;
+                }
+            }
+            
+            selectConcordanceWord(word);
+            input.style.borderColor = "#3fb950";
+            setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+        }
+        
+        function selectConcordanceWord(word) {
+            selectedConcWord = word;
+            
+            // Update word list selection (exact match using data attribute)
+            document.querySelectorAll(".conc-word-item").forEach(el => {
+                el.classList.toggle("selected", el.dataset.word === word);
+            });
+            
+            // Show results
+            const entries = concordanceData.concordance[word] || [];
+            showConcordanceResults(word, entries);
+        }
+        
+        function showConcordanceResults(word, entries) {
+            const resultsDiv = document.getElementById("concordanceResults");
+            
+            if (entries.length === 0) {
+                showNoResults(word);
+                return;
+            }
+            
+            let html = `
+                <div class="result-header">
+                    <h2>"${word}"</h2>
+                    <div class="result-count">Found in <strong>${entries.length}</strong> chapters</div>
+                </div>
+            `;
+            
+            entries.forEach(entry => {
+                // Highlight the search word in the snippet
+                const highlightedSnippet = entry.snippet.replace(
+                    new RegExp(`(${word}\\w*)`, 'gi'),
+                    '<span class="highlight">$1</span>'
+                );
+                
+                // Escape chapter key for onclick
+                const chapterEscaped = entry.chapter.replace(/'/g, "\\'");
+                
+                html += `
+                    <div class="result-card" onclick="openReader('${chapterEscaped}')" style="cursor:pointer;">
+                        <div class="result-chapter">📖 ${entry.chapter}</div>
+                        <div class="result-summary">"${entry.summary}"</div>
+                        <div class="result-verse">
+                            <span class="ref">${entry.ref}</span>
+                            ${highlightedSnippet}
+                        </div>
+                        ${entry.count > 1 ? `<div class="result-occurrences">+${entry.count - 1} more occurrence${entry.count > 2 ? 's' : ''} in this chapter</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function showNoResults(term) {
+            document.getElementById("concordanceResults").innerHTML = `
+                <div class="no-results">
+                    <h3>No results for "${term}"</h3>
+                    <p>Try a different spelling or a related word.</p>
+                    <p style="margin-top:15px;font-size:0.9em;color:#8b949e;">
+                        Tip: Words are lemmatized (e.g., "running" → "run").<br>
+                        Try the base form of the word.
+                    </p>
+                </div>
+            `;
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update tab buttons
+            document.querySelectorAll(".mode-tab").forEach(tab => {
+                const isNetwork = tab.textContent.includes("Network");
+                const shouldBeActive = (mode === 'network' && isNetwork) || (mode === 'concordance' && !isNetwork);
+                tab.classList.toggle("active", shouldBeActive);
+            });
+            
+            // Toggle views
+            const concordanceView = document.getElementById("concordanceView");
+            const controls = document.getElementById("controls");
+            const legend = document.getElementById("legend");
+            const stats = document.getElementById("stats");
+            const nodePanel = document.getElementById("nodePanel");
+            const graph = document.getElementById("graph");
+            
+            if (mode === 'concordance') {
+                concordanceView.classList.add("active");
+                controls.style.display = "none";
+                legend.style.display = "none";
+                stats.style.display = "none";
+                nodePanel.style.display = "none";
+                graph.style.display = "none";
+                
+                // Load concordance if not already loaded
+                if (!concordanceData) {
+                    loadConcordance();
+                }
+            } else {
+                concordanceView.classList.remove("active");
+                controls.style.display = "block";
+                legend.style.display = "block";
+                stats.style.display = "block";
+                nodePanel.style.display = "flex";
+                graph.style.display = "block";
+            }
+        }
+        
+        // Load concordance and entities in background after network loads
+        setTimeout(async () => {
+            await loadEntities();
+            await loadConcordance();
+        }, 1000);
+        
+        // =====================================================
+        // CHAPTER READER
+        // =====================================================
+        
+        let chaptersData = null;
+        let currentReaderChapter = null;
+        let readerFontSize = parseInt(localStorage.getItem('readerFontSize')) || 100;
+        
+        function adjustFontSize(delta) {
+            // delta: +1 to increase, -1 to decrease
+            const step = 10;  // 10% increments
+            readerFontSize = Math.max(70, Math.min(150, readerFontSize + (delta * step)));
+            
+            // Apply to reader content
+            document.getElementById("readerContent").style.fontSize = (readerFontSize / 100 * 1.15) + "em";
+            document.getElementById("fontSizeLabel").textContent = readerFontSize + "%";
+            
+            // Save preference
+            localStorage.setItem('readerFontSize', readerFontSize);
+        }
+        
+        function initFontSize() {
+            document.getElementById("readerContent").style.fontSize = (readerFontSize / 100 * 1.15) + "em";
+            document.getElementById("fontSizeLabel").textContent = readerFontSize + "%";
+        }
+        
+        async function loadChapters() {
+            try {
+                const response = await fetch("chapters.json");
+                chaptersData = await response.json();
+                console.log("Chapters loaded:", chaptersData.meta.total_chapters);
+                setupGotoChapterSelectors();
+            } catch (error) {
+                console.error("Could not load chapters:", error);
+            }
+        }
+        
+        function setupGotoChapterSelectors() {
+            if (!chaptersData) return;
+            
+            const books = chaptersData.meta.books;
+            
+            // Setup both selectors (main controls and reader)
+            ['', 'reader'].forEach(prefix => {
+                const bookSelect = document.getElementById(prefix ? `${prefix}GotoBook` : 'gotoBook');
+                const chapterSelect = document.getElementById(prefix ? `${prefix}GotoChapter` : 'gotoChapter');
+                
+                if (!bookSelect || !chapterSelect) return;
+                
+                // Populate books
+                bookSelect.innerHTML = books.map(b => `<option value="${b}">${b}</option>`).join('');
+                
+                // Update chapters when book changes
+                bookSelect.addEventListener('change', () => updateChapterSelect(bookSelect, chapterSelect));
+                
+                // Initialize chapter list for first book
+                updateChapterSelect(bookSelect, chapterSelect);
+            });
+        }
+        
+        function updateChapterSelect(bookSelect, chapterSelect) {
+            if (!chaptersData) return;
+            
+            const book = bookSelect.value;
+            const bookChapters = chaptersData.order.filter(key => chaptersData.chapters[key].book === book);
+            
+            chapterSelect.innerHTML = bookChapters.map(key => {
+                const ch = chaptersData.chapters[key].chapter;
+                return `<option value="${key}">${ch}</option>`;
+            }).join('');
+        }
+        
+        function gotoSelectedChapter(source) {
+            const bookSelect = document.getElementById(source === 'reader' ? 'readerGotoBook' : 'gotoBook');
+            const chapterSelect = document.getElementById(source === 'reader' ? 'readerGotoChapter' : 'gotoChapter');
+            
+            const chapterKey = chapterSelect.value;
+            if (chapterKey && chaptersData && chaptersData.chapters[chapterKey]) {
+                openReader(chapterKey);
+            }
+        }
+        
+        function syncReaderGotoSelectors() {
+            // Sync the reader selectors to current chapter
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const bookSelect = document.getElementById('readerGotoBook');
+            const chapterSelect = document.getElementById('readerGotoChapter');
+            
+            if (bookSelect && chapterSelect) {
+                bookSelect.value = chapter.book;
+                updateChapterSelect(bookSelect, chapterSelect);
+                chapterSelect.value = currentReaderChapter;
+            }
+        }
+        
+        function openReader(chapterKey) {
+            if (!chaptersData || !chaptersData.chapters[chapterKey]) {
+                console.error("Chapter not found:", chapterKey);
+                return;
+            }
+            
+            currentReaderChapter = chapterKey;
+            const chapter = chaptersData.chapters[chapterKey];
+            
+            // Update header
+            document.getElementById("readerTitle").textContent = chapterKey;
+            document.getElementById("readerSummary").textContent = chapter.summary ? `"${chapter.summary}"` : "";
+            
+            // Build verses HTML
+            let versesHtml = "";
+            chapter.verses.forEach(v => {
+                // Clean up NASB textual variant markers for readability
+                let text = v.text
+                    .replace(/\*/g, '')           // Remove asterisks
+                    .replace(/\[|\]/g, '')        // Remove square brackets
+                    .replace(/\s+/g, ' ')         // Normalize whitespace
+                    .trim();
+                versesHtml += `<span class="verse"><span class="verse-num">${v.verse}</span> <span class="verse-text">${text}</span> </span>`;
+            });
+            document.getElementById("readerContent").innerHTML = versesHtml;
+            
+            // Update navigation
+            updateReaderNav();
+            
+            // Show overlay
+            document.getElementById("readerOverlay").classList.add("active");
+            document.body.style.overflow = "hidden";
+            
+            // Sync the goto selectors to current chapter
+            syncReaderGotoSelectors();
+            
+            // Apply saved font size
+            initFontSize();
+            
+            // Scroll to top
+            document.getElementById("readerContent").scrollTop = 0;
+        }
+        
+        function closeReader() {
+            stopChapterAudio();  // Stop audio when closing
+            document.getElementById("readerOverlay").classList.remove("active");
+            document.body.style.overflow = "";
+            currentReaderChapter = null;
+        }
+        
+        function updateReaderNav() {
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const order = chaptersData.order;
+            const currentIdx = order.indexOf(currentReaderChapter);
+            
+            // Count chapters in current book
+            const bookChapters = order.filter(ch => chaptersData.chapters[ch].book === chapter.book);
+            const bookIdx = bookChapters.indexOf(currentReaderChapter) + 1;
+            
+            // Update position text
+            document.getElementById("readerPosition").textContent = 
+                `${chapter.book} · Chapter ${bookIdx} of ${bookChapters.length}`;
+            
+            // Update buttons
+            const prevBtn = document.getElementById("btnPrevChapter");
+            const nextBtn = document.getElementById("btnNextChapter");
+            
+            if (chapter.prev) {
+                const prevChapter = chaptersData.chapters[chapter.prev];
+                prevBtn.disabled = false;
+                prevBtn.innerHTML = `← ${prevChapter.book === chapter.book ? 'Ch. ' + prevChapter.chapter : prevChapter.book}`;
+            } else {
+                prevBtn.disabled = true;
+                prevBtn.innerHTML = "← Previous";
+            }
+            
+            if (chapter.next) {
+                const nextChapter = chaptersData.chapters[chapter.next];
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = `${nextChapter.book === chapter.book ? 'Ch. ' + nextChapter.chapter : nextChapter.book} →`;
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = "Next →";
+            }
+        }
+        
+        function navigateChapter(direction) {
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const targetKey = direction === 'prev' ? chapter.prev : chapter.next;
+            
+            if (targetKey) {
+                stopChapterAudio();  // Stop audio when navigating
+                openReader(targetKey);
+            }
+        }
+        
+        // Keyboard navigation for reader
+        document.addEventListener("keydown", (event) => {
+            if (!document.getElementById("readerOverlay").classList.contains("active")) return;
+            
+            if (event.key === "Escape") {
+                closeReader();
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                navigateChapter('prev');
+            } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                navigateChapter('next');
+            } else if (event.key === " " && !event.target.matches('input')) {
+                // Spacebar toggles audio
+                event.preventDefault();
+                toggleChapterAudio();
+            }
+        });
+        
+        // =====================================================
+        // CHAPTER AUDIO (TTS) - Streaming Edge TTS via server
+        // =====================================================
+        
+        let chapterAudio = null;
+        let isAudioLoading = false;
+        let mediaSource = null;
+        let sourceBuffer = null;
+        let audioQueue = [];
+        let isAppending = false;
+        
+        async function toggleChapterAudio() {
+            const btn = document.getElementById("btnPlayChapter");
+            
+            // If already playing, pause
+            if (chapterAudio && !chapterAudio.paused) {
+                chapterAudio.pause();
+                btn.textContent = "▶";
+                btn.classList.remove("playing");
+                return;
+            }
+            
+            // If paused, resume
+            if (chapterAudio && chapterAudio.paused && chapterAudio.currentTime > 0) {
+                chapterAudio.play();
+                btn.textContent = "⏸";
+                btn.classList.add("playing");
+                return;
+            }
+            
+            // Otherwise, load and play
+            if (isAudioLoading) return;
+            
+            if (!currentReaderChapter || !chaptersData) {
+                console.error("No chapter loaded");
+                return;
+            }
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            if (!chapter) return;
+            
+            // Build full chapter text (strip punctuation that TTS mispronounces)
+            const text = chapter.verses.map(v => v.text).join(" ")
+                .replace(/\*/g, '')
+                .replace(/\[|\]/g, '')
+                .replace(/[\u2018\u2019\u201A\u201B\u201C\u201D\u201E\u201F\u00AB\u00BB"']/g, '')
+                .replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase())  // ALL CAPS → Title case
+                .replace(/\s+/g, ' ')
+                .trim();
+            
+            // Show loading state
+            isAudioLoading = true;
+            btn.textContent = "⏳";
+            btn.classList.add("loading");
+            
+            try {
+                // Stop any existing audio
+                stopChapterAudio();
+                
+                // Fetch with streaming
+                const response = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, chapter: currentReaderChapter })
+                });
+                
+                if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
+                
+                // Use MediaSource for true streaming playback
+                const mediaSource = new MediaSource();
+                chapterAudio = new Audio();
+                chapterAudio.src = URL.createObjectURL(mediaSource);
+                setupAudioEvents(btn);
+                
+                mediaSource.addEventListener('sourceopen', async () => {
+                    const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+                    const reader = response.body.getReader();
+                    let started = false;
+                    
+                    const appendQueue = [];
+                    let isAppending = false;
+                    
+                    const processQueue = () => {
+                        if (isAppending || appendQueue.length === 0) return;
+                        if (sourceBuffer.updating) return;
+                        
+                        isAppending = true;
+                        const chunk = appendQueue.shift();
+                        try {
+                            sourceBuffer.appendBuffer(chunk);
+                        } catch (e) {
+                            console.error("Append error:", e);
+                            isAppending = false;
+                        }
+                    };
+                    
+                    sourceBuffer.addEventListener('updateend', () => {
+                        isAppending = false;
+                        processQueue();
+                        
+                        // Start playback after first chunk appended
+                        if (!started && chapterAudio.paused) {
+                            started = true;
+                            chapterAudio.play().catch(e => console.error("Play failed:", e));
+                            btn.textContent = "⏸";
+                            btn.classList.remove("loading");
+                            btn.classList.add("playing");
+                        }
+                    });
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        appendQueue.push(value);
+                        processQueue();
+                    }
+                    
+                    // Wait for queue to drain, then end stream
+                    const waitForQueue = () => {
+                        if (appendQueue.length === 0 && !sourceBuffer.updating) {
+                            if (mediaSource.readyState === 'open') {
+                                mediaSource.endOfStream();
+                            }
+                        } else {
+                            setTimeout(waitForQueue, 100);
+                        }
+                    };
+                    waitForQueue();
+                });
+                
+            } catch (error) {
+                console.error("TTS error:", error);
+                btn.textContent = "❌";
+                setTimeout(() => { btn.textContent = "▶"; }, 2000);
+            } finally {
+                isAudioLoading = false;
+                btn.classList.remove("loading");
+            }
+        }
+        
+        function setupAudioEvents(btn) {
+            chapterAudio.onended = () => {
+                btn.textContent = "▶";
+                btn.classList.remove("playing");
+            };
+            chapterAudio.onerror = (e) => {
+                console.error("Audio error:", e);
+                btn.textContent = "▶";
+                btn.classList.remove("playing", "loading");
+            };
+        }
+        
+        function stopChapterAudio() {
+            if (chapterAudio) {
+                chapterAudio.pause();
+                chapterAudio.currentTime = 0;
+                try { URL.revokeObjectURL(chapterAudio.src); } catch(e) {}
+                chapterAudio = null;
+            }
+            const btn = document.getElementById("btnPlayChapter");
+            if (btn) {
+                btn.textContent = "▶";
+                btn.classList.remove("playing", "loading");
+            }
+        }
+        
+        // Load chapters data on startup
+        loadChapters();
+        
+        loadData();
+    </script>
+</body>
+</html>

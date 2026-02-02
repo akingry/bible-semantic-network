@@ -9,6 +9,10 @@ build/
 # Temp files
 *.tmp
 temp_*.txt
+tts_cache/
 
 # Debug scripts
 check_*.py
+
+# Copyrighted content (not for distribution)
+nasb.txt
