@@ -914,20 +914,42 @@
         #exitFullscreenBtn {
             display: none;
             position: fixed;
-            top: 15px;
-            right: 15px;
-            background: rgba(92, 64, 51, 0.9);
+            top: 20px;
+            right: 20px;
+            background: #5c4033;
             color: #fff;
             border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.9em;
-            z-index: 1001;
+            font-size: 1em;
+            z-index: 2147483647;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         
         #exitFullscreenBtn:hover {
             background: #7a5a45;
+        }
+        
+        /* True fullscreen styles */
+        #readerOverlay:fullscreen {
+            background: #faf8f5;
+            padding: 0;
+        }
+        
+        #readerOverlay:fullscreen #readerContainer {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        
+        #readerOverlay:fullscreen #readerContent {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 40px;
         }
         
         #readerGoto {
@@ -2380,17 +2402,37 @@
         }
         
         function toggleReaderFullscreen() {
+            const overlay = document.getElementById("readerOverlay");
             const container = document.getElementById("readerContainer");
-            const btn = document.getElementById("btnFullscreen");
-            container.classList.toggle("fullscreen");
-            if (container.classList.contains("fullscreen")) {
-                btn.textContent = "⛶";
-                btn.title = "Exit fullscreen";
+            const exitBtn = document.getElementById("exitFullscreenBtn");
+            
+            if (!document.fullscreenElement) {
+                // Enter true fullscreen
+                overlay.requestFullscreen().then(() => {
+                    container.classList.add("fullscreen");
+                    exitBtn.style.display = "block";
+                }).catch(err => {
+                    console.error("Fullscreen error:", err);
+                    // Fallback: just use CSS fullscreen
+                    container.classList.add("fullscreen");
+                    exitBtn.style.display = "block";
+                });
             } else {
-                btn.textContent = "⛶";
-                btn.title = "Fullscreen";
+                // Exit fullscreen
+                document.exitFullscreen();
             }
         }
+        
+        // Listen for fullscreen changes (user pressing Esc, etc.)
+        document.addEventListener("fullscreenchange", () => {
+            const container = document.getElementById("readerContainer");
+            const exitBtn = document.getElementById("exitFullscreenBtn");
+            
+            if (!document.fullscreenElement) {
+                container.classList.remove("fullscreen");
+                exitBtn.style.display = "none";
+            }
+        });
         
         function updateReaderNav() {
             if (!currentReaderChapter || !chaptersData) return;
