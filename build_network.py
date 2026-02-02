@@ -60,55 +60,63 @@ def extract_semantic_chain(summary: str) -> list[dict]:
     chain = []
     seen_words = set()
     
+    # Helper to get lemma (singular form)
+    def get_lemma(token):
+        lemma = token.lemma_.lower()
+        # spaCy sometimes returns -PRON- for pronouns, use text instead
+        if lemma.startswith('-'):
+            return token.text.lower()
+        return lemma
+    
     # Find subjects (nouns that are subjects or known entities)
     subjects = []
     for token in doc:
         word_lower = token.text.lower()
+        lemma = get_lemma(token)
         
         # Check if it's a known Biblical entity
-        if word_lower in BIBLICAL_ENTITIES:
-            if word_lower not in seen_words:
-                subjects.append({'word': word_lower, 'role': 'subject', 'pos': 'PROPN'})
-                seen_words.add(word_lower)
+        if word_lower in BIBLICAL_ENTITIES or lemma in BIBLICAL_ENTITIES:
+            use_word = word_lower if word_lower in BIBLICAL_ENTITIES else lemma
+            if use_word not in seen_words:
+                subjects.append({'word': use_word, 'role': 'subject', 'pos': 'PROPN'})
+                seen_words.add(use_word)
             continue
         
         # Check if it's a subject noun
-        if token.dep_ in ('nsubj', 'nsubjpass') or word_lower in SUBJECT_WORDS:
-            if token.pos_ in ('NOUN', 'PROPN') and word_lower not in seen_words and len(word_lower) > 2:
-                subjects.append({'word': word_lower, 'role': 'subject', 'pos': token.pos_})
-                seen_words.add(word_lower)
+        if token.dep_ in ('nsubj', 'nsubjpass') or word_lower in SUBJECT_WORDS or lemma in SUBJECT_WORDS:
+            if token.pos_ in ('NOUN', 'PROPN') and lemma not in seen_words and len(lemma) > 2:
+                subjects.append({'word': lemma, 'role': 'subject', 'pos': token.pos_})
+                seen_words.add(lemma)
     
     # Find verbs (actions)
     verbs = []
     for token in doc:
-        word_lower = token.text.lower()
-        if token.pos_ == 'VERB' and word_lower not in seen_words and len(word_lower) > 2:
-            # Get lemma for consistency (warns -> warn)
-            lemma = token.lemma_.lower()
-            if lemma not in seen_words:
+        if token.pos_ == 'VERB':
+            lemma = get_lemma(token)
+            if lemma not in seen_words and len(lemma) > 2:
                 verbs.append({'word': lemma, 'role': 'verb', 'pos': 'VERB'})
                 seen_words.add(lemma)
     
     # Find objects and modifiers
     objects = []
     for token in doc:
-        word_lower = token.text.lower()
-        if word_lower in seen_words:
+        lemma = get_lemma(token)
+        if lemma in seen_words:
             continue
         
         # Direct objects
         if token.dep_ in ('dobj', 'pobj', 'attr') and token.pos_ in ('NOUN', 'PROPN'):
-            if len(word_lower) > 2:
-                objects.append({'word': word_lower, 'role': 'object', 'pos': token.pos_})
-                seen_words.add(word_lower)
+            if len(lemma) > 2:
+                objects.append({'word': lemma, 'role': 'object', 'pos': token.pos_})
+                seen_words.add(lemma)
         # Adjectives and adverbs as modifiers
-        elif token.pos_ in ('ADJ', 'ADV') and len(word_lower) > 3:
-            objects.append({'word': word_lower, 'role': 'modifier', 'pos': token.pos_})
-            seen_words.add(word_lower)
+        elif token.pos_ in ('ADJ', 'ADV') and len(lemma) > 3:
+            objects.append({'word': lemma, 'role': 'modifier', 'pos': token.pos_})
+            seen_words.add(lemma)
         # Other nouns
-        elif token.pos_ in ('NOUN', 'PROPN') and len(word_lower) > 2:
-            objects.append({'word': word_lower, 'role': 'object', 'pos': token.pos_})
-            seen_words.add(word_lower)
+        elif token.pos_ in ('NOUN', 'PROPN') and len(lemma) > 2:
+            objects.append({'word': lemma, 'role': 'object', 'pos': token.pos_})
+            seen_words.add(lemma)
     
     # Build chain: subjects first, then verbs, then objects/modifiers
     chain = subjects + verbs + objects

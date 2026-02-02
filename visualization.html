@@ -75,6 +75,74 @@
         
         #legend h3 { margin-bottom: 10px; color: #58a6ff; font-size: 1em; }
         
+        #legend kbd {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            font-family: monospace;
+            margin-right: 6px;
+        }
+        
+        .touch-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .touch-btn {
+            flex: 1;
+            padding: 10px 12px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .touch-btn:hover, .touch-btn:active {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            #controls {
+                max-width: 250px;
+                padding: 15px;
+                font-size: 0.9em;
+            }
+            
+            #nodePanel {
+                display: none; /* Hide on mobile - too cramped */
+            }
+            
+            #legend {
+                bottom: auto;
+                top: auto;
+                right: 20px;
+                left: auto;
+                bottom: 20px;
+            }
+            
+            #stats {
+                font-size: 0.8em;
+                padding: 10px 15px;
+            }
+            
+            .touch-btn {
+                padding: 12px 15px;
+                font-size: 1em;
+            }
+            
+            #legend kbd {
+                display: none; /* Hide keyboard hints on mobile */
+            }
+        }
+        
         .legend-item {
             display: flex;
             align-items: center;
@@ -300,12 +368,20 @@
         </div>
         
         <div id="legend">
-            <h3>Semantic Roles</h3>
-            <div class="legend-item"><div class="legend-circle" style="background:#f0883e;"></div>Subject (actor)</div>
-            <div class="legend-item"><div class="legend-circle" style="background:#a371f7;"></div>Verb (action)</div>
+            <h3>Node Types</h3>
+            <div class="legend-item"><div class="legend-circle" style="background:#f0883e;"></div>Subject</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#a371f7;"></div>Verb</div>
             <div class="legend-item"><div class="legend-circle" style="background:#3fb950;"></div>Object</div>
             <div class="legend-item"><div class="legend-circle" style="background:#58a6ff;"></div>Modifier</div>
-            <div class="legend-item"><div class="legend-rect" style="background:#f85149;"></div>Chapter (leaf)</div>
+            <div class="legend-item"><div class="legend-rect" style="background:#f85149;"></div>Chapter</div>
+            
+            <h3 style="margin-top:15px;">Controls</h3>
+            <div class="legend-item"><kbd>Backspace</kbd> Go back</div>
+            <div class="legend-item"><kbd>Esc</kbd> Reset</div>
+            <div class="touch-buttons">
+                <button id="btnBack" class="touch-btn">← Back</button>
+                <button id="btnReset" class="touch-btn">Reset</button>
+            </div>
         </div>
         
         <div id="stats">
@@ -372,8 +448,35 @@
                 const response = await fetch("network_data.json");
                 allData = await response.json();
                 
+                // Bible book order
+                const BIBLE_ORDER = [
+                    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
+                    "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
+                    "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles",
+                    "Ezra", "Nehemiah", "Esther", "Job", "Psalms", "Proverbs",
+                    "Ecclesiastes", "Song Of Solomon", "Isaiah", "Jeremiah",
+                    "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+                    "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
+                    "Haggai", "Zechariah", "Malachi",
+                    "Matthew", "Mark", "Luke", "John", "Acts", "Romans",
+                    "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+                    "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
+                    "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews",
+                    "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
+                    "Jude", "Revelation"
+                ];
+                
                 const bookSelect = document.getElementById("bookFilter");
-                allData.meta.books.forEach(book => {
+                const sortedBooks = allData.meta.books.slice().sort((a, b) => {
+                    const aIdx = BIBLE_ORDER.indexOf(a);
+                    const bIdx = BIBLE_ORDER.indexOf(b);
+                    if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+                    if (aIdx === -1) return 1;
+                    if (bIdx === -1) return -1;
+                    return aIdx - bIdx;
+                });
+                
+                sortedBooks.forEach(book => {
                     const opt = document.createElement("option");
                     opt.value = book;
                     opt.textContent = book;
@@ -400,42 +503,38 @@
             }
             const chapterIds = new Set(chapters.map(n => n.id));
             
-            // Find connected words via links
+            // Find words that ACTUALLY appear in the selected chapters' chains
             const connectedWords = new Set();
-            const relevantLinks = new Set();
-            
-            // Find words directly connected to chapters
-            allData.links.forEach(link => {
-                if (chapterIds.has(link.target)) {
-                    connectedWords.add(link.source);
-                    relevantLinks.add(JSON.stringify(link));
+            chapters.forEach(ch => {
+                if (ch.chain) {
+                    ch.chain.forEach(word => connectedWords.add(word));
                 }
             });
             
-            // Trace back through the chain
-            let foundNew = true;
-            let iterations = 0;
-            while (foundNew && iterations < 10) {
-                foundNew = false;
-                iterations++;
-                allData.links.forEach(link => {
-                    if (connectedWords.has(link.target) && !chapterIds.has(link.source)) {
-                        const sourceNode = allData.nodes.find(n => n.id === link.source);
-                        if (sourceNode && sourceNode.count >= minCount) {
-                            if (!connectedWords.has(link.source)) {
-                                connectedWords.add(link.source);
-                                foundNew = true;
-                            }
-                            relevantLinks.add(JSON.stringify(link));
-                        }
+            // Build relevant links from the actual chains
+            const relevantLinks = new Set();
+            chapters.forEach(ch => {
+                if (ch.chain && ch.chain.length > 0) {
+                    // Links between consecutive words in the chain
+                    for (let i = 0; i < ch.chain.length - 1; i++) {
+                        relevantLinks.add(JSON.stringify({
+                            source: ch.chain[i],
+                            target: ch.chain[i + 1],
+                            weight: 1
+                        }));
                     }
-                });
-            }
+                    // Link from last word to chapter
+                    relevantLinks.add(JSON.stringify({
+                        source: ch.chain[ch.chain.length - 1],
+                        target: ch.id,
+                        weight: 1
+                    }));
+                }
+            });
             
-            // Filter words by role visibility and min count
+            // Filter words by role visibility
             let words = allData.nodes.filter(n => 
                 n.type === 'word' && 
-                n.count >= minCount && 
                 connectedWords.has(n.id) &&
                 showRoles[n.role]
             );
@@ -569,13 +668,26 @@
                     g.selectAll(".node").classed("search-highlight", false);
                 });
             
-            // Escape key releases the chain
+            // Keyboard shortcuts
             document.addEventListener("keydown", (event) => {
                 if (event.key === "Escape") {
+                    // Reset everything
                     navigationPath = [];
                     selectedNode = null;
                     resetHighlight(node, link);
                     g.selectAll(".node").classed("search-highlight", false);
+                } else if (event.key === "Backspace" && !event.target.matches('input')) {
+                    // Go back one step
+                    event.preventDefault();
+                    if (navigationPath.length > 1) {
+                        navigationPath.pop();
+                        selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                        highlightPath(navigationPath, simNodes, simLinks, node, link);
+                    } else if (navigationPath.length === 1) {
+                        navigationPath = [];
+                        selectedNode = null;
+                        resetHighlight(node, link);
+                    }
                 }
             });
             
@@ -624,6 +736,26 @@
             
             // Initialize node panel with all nodes
             updateNodePanel(simNodes);
+            
+            // Touch button handlers
+            document.getElementById("btnBack").onclick = () => {
+                if (navigationPath.length > 1) {
+                    navigationPath.pop();
+                    selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                    highlightPath(navigationPath, simNodes, simLinks, node, link);
+                } else if (navigationPath.length === 1) {
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                }
+            };
+            
+            document.getElementById("btnReset").onclick = () => {
+                navigationPath = [];
+                selectedNode = null;
+                resetHighlight(node, link);
+                g.selectAll(".node").classed("search-highlight", false);
+            };
         }
         
         // Pre-computed lookup tables (built once when data loads)
