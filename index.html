@@ -172,7 +172,7 @@
             }
             
             #nodePanel {
-                display: none; /* Hide on mobile - too cramped */
+                display: none !important; /* Hide on mobile - too cramped */
             }
             
             #legend {
@@ -872,6 +872,64 @@
             flex-shrink: 0;
         }
         
+        .fullscreen-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-right: 10px;
+        }
+        
+        .fullscreen-btn:hover {
+            background: #7a5a45;
+        }
+        
+        /* Reader fullscreen mode */
+        #readerContainer.fullscreen {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+        }
+        
+        #readerContainer.fullscreen #readerHeader,
+        #readerContainer.fullscreen #readerNav,
+        #readerContainer.fullscreen #readerGoto {
+            display: none;
+        }
+        
+        #readerContainer.fullscreen #readerContent {
+            padding: 40px;
+            padding-top: 60px;
+        }
+        
+        #readerContainer.fullscreen #exitFullscreenBtn {
+            display: block;
+        }
+        
+        #exitFullscreenBtn {
+            display: none;
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(92, 64, 51, 0.9);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            z-index: 1001;
+        }
+        
+        #exitFullscreenBtn:hover {
+            background: #7a5a45;
+        }
+        
         #readerGoto {
             background: #f0ebe3;
             padding: 10px 25px 15px;
@@ -985,10 +1043,10 @@
                     Type a word to search all <strong>31,102</strong> verses
                 </div>
                 
-                <div class="conc-tabs">
-                    <button class="conc-tab active" onclick="setConcordanceTab('count')">📊 Count</button>
-                    <button class="conc-tab" onclick="setConcordanceTab('people')">👤 People</button>
-                    <button class="conc-tab" onclick="setConcordanceTab('places')">📍 Places</button>
+                <div class="conc-tabs" id="concTabs">
+                    <button class="conc-tab active" data-tab="count">📊 Count</button>
+                    <button class="conc-tab" data-tab="people">👤 People</button>
+                    <button class="conc-tab" data-tab="places">📍 Places</button>
                 </div>
                 
                 <div class="conc-word-list" id="concWordList">
@@ -1007,6 +1065,7 @@
         
         <!-- Chapter Reader Overlay -->
         <div id="readerOverlay" onclick="if(event.target === this) closeReader()">
+            <button id="exitFullscreenBtn" onclick="toggleReaderFullscreen()">✕ Exit Fullscreen</button>
             <div id="readerContainer">
                 <div id="readerHeader">
                     <div>
@@ -1022,6 +1081,7 @@
                             <span class="font-size-label" id="fontSizeLabel">100%</span>
                             <button class="font-btn" onclick="adjustFontSize(1)" title="Increase font size">+</button>
                         </div>
+                        <button class="fullscreen-btn" id="btnFullscreen" onclick="toggleReaderFullscreen()" title="Fullscreen">⛶</button>
                         <button id="readerClose" onclick="closeReader()" title="Close (Esc)">×</button>
                     </div>
                 </div>
@@ -1945,6 +2005,16 @@
                 concordanceData = await response.json();
                 console.log("Concordance loaded:", concordanceData.meta);
                 
+                // Setup tab click handlers (works better on mobile)
+                document.querySelectorAll('#concTabs .conc-tab').forEach(btn => {
+                    const handler = (e) => {
+                        e.preventDefault();
+                        setConcordanceTab(btn.dataset.tab);
+                    };
+                    btn.addEventListener('click', handler);
+                    btn.addEventListener('touchend', handler);
+                });
+                
                 // Update stats
                 document.getElementById("concStats").innerHTML = 
                     `<strong>${concordanceData.meta.total_words.toLocaleString()}</strong> indexed words across ` +
@@ -2007,10 +2077,7 @@
             
             // Update tab buttons
             document.querySelectorAll(".conc-tab").forEach(btn => {
-                const isActive = (tab === 'count' && btn.textContent.includes('Count')) ||
-                                 (tab === 'people' && btn.textContent.includes('People')) ||
-                                 (tab === 'places' && btn.textContent.includes('Places'));
-                btn.classList.toggle("active", isActive);
+                btn.classList.toggle("active", btn.dataset.tab === tab);
             });
             
             // Refresh word list
@@ -2306,9 +2373,23 @@
         
         function closeReader() {
             stopChapterAudio();  // Stop audio when closing
+            document.getElementById("readerContainer").classList.remove("fullscreen");
             document.getElementById("readerOverlay").classList.remove("active");
             document.body.style.overflow = "";
             currentReaderChapter = null;
+        }
+        
+        function toggleReaderFullscreen() {
+            const container = document.getElementById("readerContainer");
+            const btn = document.getElementById("btnFullscreen");
+            container.classList.toggle("fullscreen");
+            if (container.classList.contains("fullscreen")) {
+                btn.textContent = "⛶";
+                btn.title = "Exit fullscreen";
+            } else {
+                btn.textContent = "⛶";
+                btn.title = "Fullscreen";
+            }
         }
         
         function updateReaderNav() {
