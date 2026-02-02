@@ -336,6 +336,483 @@
             font-size: 1.3em;
             color: #58a6ff;
         }
+        
+        /* Mode Toggle Tabs */
+        .mode-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 10px 12px;
+            background: #21262d;
+            color: #8b949e;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .mode-tab:first-child {
+            border-right: 1px solid #30363d;
+        }
+        
+        .mode-tab.active {
+            background: #238636;
+            color: #fff;
+        }
+        
+        .mode-tab:hover:not(.active) {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        
+        /* Concordance Mode */
+        #concordanceView {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            overflow: hidden;
+        }
+        
+        #concordanceView.active {
+            display: flex;
+        }
+        
+        #concordanceControls {
+            width: 350px;
+            padding: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #concordanceResults {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+        
+        .conc-search-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .conc-search-box input {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 1.1em;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+        
+        .conc-search-box input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        
+        .conc-search-box button {
+            padding: 12px 20px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        
+        .conc-search-box button:hover {
+            background: #2ea043;
+        }
+        
+        .conc-stats {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .conc-stats strong {
+            color: #58a6ff;
+        }
+        
+        .conc-word-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .conc-word-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .conc-word-item:hover {
+            background: rgba(88, 166, 255, 0.15);
+        }
+        
+        .conc-word-item.selected {
+            background: #238636;
+            color: #fff;
+        }
+        
+        .conc-word-item .count {
+            font-size: 0.8em;
+            color: #8b949e;
+            background: #21262d;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .conc-word-item.selected .count {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        
+        .conc-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        
+        .conc-tab {
+            flex: 1;
+            padding: 8px 6px;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .conc-tab:hover:not(.active) {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        
+        .conc-tab.active {
+            background: #238636;
+            color: #fff;
+            border-color: #238636;
+        }
+        
+        /* Results */
+        .result-header {
+            margin-bottom: 20px;
+        }
+        
+        .result-header h2 {
+            color: #58a6ff;
+            margin-bottom: 5px;
+            text-transform: capitalize;
+        }
+        
+        .result-header .result-count {
+            color: #8b949e;
+            font-size: 0.95em;
+        }
+        
+        .result-card {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        
+        .result-card:hover {
+            border-color: #58a6ff;
+            background: rgba(30, 35, 42, 0.95);
+            transform: translateY(-1px);
+            cursor: pointer;
+        }
+        
+        .result-chapter {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 4px;
+        }
+        
+        .result-summary {
+            color: #c9d1d9;
+            font-style: italic;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        .result-verse {
+            background: #161b22;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #8b949e;
+            border-left: 3px solid #30363d;
+        }
+        
+        .result-verse .ref {
+            color: #a371f7;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        
+        .result-verse .highlight {
+            background: rgba(88, 166, 255, 0.3);
+            color: #fff;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        
+        .result-occurrences {
+            font-size: 0.8em;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8b949e;
+        }
+        
+        .no-results h3 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        
+        /* Mobile Concordance */
+        @media (max-width: 768px) {
+            #concordanceControls {
+                width: 100%;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+            }
+            
+            #concordanceView.active {
+                flex-direction: column;
+            }
+        }
+        
+        /* =====================================================
+           CHAPTER READER (Kindle-style)
+           ===================================================== */
+        
+        #readerOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        #readerOverlay.active {
+            display: flex;
+        }
+        
+        #readerContainer {
+            background: #faf8f5;
+            color: #2c2c2c;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        
+        #readerHeader {
+            background: #f0ebe3;
+            padding: 15px 25px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        #readerTitle {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #5c4033;
+        }
+        
+        #readerSummary {
+            font-size: 0.85em;
+            color: #8b7355;
+            font-style: italic;
+            margin-top: 4px;
+        }
+        
+        #readerClose {
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: #8b7355;
+            cursor: pointer;
+            padding: 0 10px;
+            line-height: 1;
+        }
+        
+        #readerClose:hover {
+            color: #5c4033;
+        }
+        
+        .font-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 15px;
+        }
+        
+        .font-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .font-btn:hover {
+            background: #7a5a45;
+        }
+        
+        .font-size-label {
+            font-size: 0.8em;
+            color: #8b7355;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        #readerContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 40px;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 1.15em;
+            line-height: 1.9;
+        }
+        
+        .verse {
+            margin-bottom: 0.5em;
+            text-align: justify;
+        }
+        
+        .verse-num {
+            font-size: 0.7em;
+            color: #b8860b;
+            font-weight: 600;
+            vertical-align: super;
+            margin-right: 3px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .verse-text {
+            color: #2c2c2c;
+        }
+        
+        #readerNav {
+            background: #f0ebe3;
+            padding: 15px 25px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .nav-btn {
+            background: #5c4033;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            background: #7a5a45;
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            color: #888;
+            cursor: not-allowed;
+        }
+        
+        .nav-btn.prev::before {
+            content: "←";
+        }
+        
+        .nav-btn.next::after {
+            content: "→";
+        }
+        
+        #readerPosition {
+            font-size: 0.85em;
+            color: #8b7355;
+        }
+        
+        /* Mobile Reader */
+        @media (max-width: 600px) {
+            #readerContent {
+                padding: 20px 25px;
+                font-size: 1.05em;
+            }
+            
+            #readerHeader, #readerNav {
+                padding: 12px 15px;
+            }
+            
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -343,9 +820,82 @@
         <div id="loading">Loading semantic network...</div>
         <svg id="graph"></svg>
         
+        <!-- Concordance View (hidden by default) -->
+        <div id="concordanceView">
+            <div id="concordanceControls">
+                <h1 style="color:#58a6ff;margin-bottom:5px;font-size:1.2em;">📖 Bible Concordance</h1>
+                <div class="subtitle" style="margin-bottom:15px;">Search the full text of Scripture</div>
+                
+                <div class="mode-tabs">
+                    <button class="mode-tab" onclick="setMode('network')">🕸️ Network</button>
+                    <button class="mode-tab active" onclick="setMode('concordance')">📚 Concordance</button>
+                </div>
+                
+                <div class="conc-search-box">
+                    <input type="text" id="concSearch" placeholder="pharisee, covenant, glory..." onkeydown="if(event.key==='Enter')doConcordanceSearch()">
+                    <button onclick="doConcordanceSearch()">Search</button>
+                </div>
+                
+                <div class="conc-stats" id="concStats">
+                    Type a word to search all <strong>31,102</strong> verses
+                </div>
+                
+                <div class="conc-tabs">
+                    <button class="conc-tab active" onclick="setConcordanceTab('count')">📊 Count</button>
+                    <button class="conc-tab" onclick="setConcordanceTab('people')">👤 People</button>
+                    <button class="conc-tab" onclick="setConcordanceTab('places')">📍 Places</button>
+                </div>
+                
+                <div class="conc-word-list" id="concWordList">
+                    <!-- Words will be listed here -->
+                </div>
+            </div>
+            
+            <div id="concordanceResults">
+                <div class="no-results">
+                    <h3>🔍 Search the Bible</h3>
+                    <p>Enter a word to find every chapter where it appears, with verse context.</p>
+                    <p style="margin-top:10px;font-size:0.9em;">Unlike the Network view (which searches 5-word summaries),<br>Concordance searches the actual Bible text.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chapter Reader Overlay -->
+        <div id="readerOverlay" onclick="if(event.target === this) closeReader()">
+            <div id="readerContainer">
+                <div id="readerHeader">
+                    <div>
+                        <div id="readerTitle">Genesis 1</div>
+                        <div id="readerSummary">"God creates heavens and earth slowly."</div>
+                    </div>
+                    <div style="display:flex;align-items:center;">
+                        <div class="font-controls">
+                            <button class="font-btn" onclick="adjustFontSize(-1)" title="Decrease font size">−</button>
+                            <span class="font-size-label" id="fontSizeLabel">100%</span>
+                            <button class="font-btn" onclick="adjustFontSize(1)" title="Increase font size">+</button>
+                        </div>
+                        <button id="readerClose" onclick="closeReader()" title="Close (Esc)">×</button>
+                    </div>
+                </div>
+                <div id="readerContent">
+                    <!-- Verses will be inserted here -->
+                </div>
+                <div id="readerNav">
+                    <button class="nav-btn prev" id="btnPrevChapter" onclick="navigateChapter('prev')">Previous</button>
+                    <div id="readerPosition">Chapter 1 of 50</div>
+                    <button class="nav-btn next" id="btnNextChapter" onclick="navigateChapter('next')">Next</button>
+                </div>
+            </div>
+        </div>
+        
         <div id="controls">
             <h1>📖 Bible Semantic Network</h1>
             <div class="subtitle">Subjects → Actions → Objects → Chapters</div>
+            
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="setMode('network')">🕸️ Network</button>
+                <button class="mode-tab" onclick="setMode('concordance')">📚 Concordance</button>
+            </div>
             
             <label>Search:</label>
             <div style="display:flex;gap:5px;margin-top:5px;">
@@ -376,6 +926,7 @@
             <div class="legend-item"><div class="legend-rect" style="background:#f85149;"></div>Chapter</div>
             
             <h3 style="margin-top:15px;">Controls</h3>
+            <div class="legend-item"><kbd>Double-click</kbd> Read chapter</div>
             <div class="legend-item"><kbd>Backspace</kbd> Go back</div>
             <div class="legend-item"><kbd>Esc</kbd> Reset</div>
             <div class="touch-buttons">
@@ -657,6 +1208,13 @@
                         navigationPath = [d.id];
                         selectedNode = d;
                         highlightPath(navigationPath, simNodes, simLinks, node, link);
+                    }
+                })
+                .on("dblclick", (event, d) => {
+                    // Double-click on chapter opens reader
+                    if (d.type === 'chapter') {
+                        event.stopPropagation();
+                        openReader(d.id);
                     }
                 })
                 .on("contextmenu", (event) => {
@@ -1141,6 +1699,406 @@
                 simulation.alpha(0.3).restart();
             }
         });
+        
+        // =====================================================
+        // CONCORDANCE MODE
+        // =====================================================
+        
+        let concordanceData = null;
+        let currentMode = 'network';
+        let selectedConcWord = null;
+        let currentConcTab = 'count';
+        
+        // Entity lists loaded from entities.json (extracted via spaCy NER)
+        let BIBLE_PEOPLE = [];
+        let BIBLE_PLACES = [];
+        
+        // False positives to filter out (spaCy mistakes)
+        const ENTITY_BLACKLIST = new Set([
+            'behold', 'arise', 'lo', 'alas', 'amen', 'selah', 'hallelujah',
+            'woe', 'hosanna', 'truly', 'verily', 'surely', 'therefore'
+        ]);
+        
+        async function loadEntities() {
+            try {
+                const response = await fetch("entities.json");
+                const data = await response.json();
+                BIBLE_PEOPLE = data.people.filter(p => !ENTITY_BLACKLIST.has(p));
+                BIBLE_PLACES = data.places.filter(p => !ENTITY_BLACKLIST.has(p));
+                console.log(`Loaded ${BIBLE_PEOPLE.length} people, ${BIBLE_PLACES.length} places`);
+            } catch (error) {
+                console.error("Could not load entities:", error);
+                // Fallback to empty lists
+                BIBLE_PEOPLE = [];
+                BIBLE_PLACES = [];
+            }
+        }
+        
+        async function loadConcordance() {
+            try {
+                const response = await fetch("concordance.json");
+                concordanceData = await response.json();
+                console.log("Concordance loaded:", concordanceData.meta);
+                
+                // Update stats
+                document.getElementById("concStats").innerHTML = 
+                    `<strong>${concordanceData.meta.total_words.toLocaleString()}</strong> indexed words across ` +
+                    `<strong>${concordanceData.meta.total_verses.toLocaleString()}</strong> verses`;
+                
+                // Show popular words
+                showPopularWords();
+            } catch (error) {
+                console.error("Could not load concordance:", error);
+                document.getElementById("concStats").innerHTML = 
+                    '<span style="color:#f85149;">Concordance not available. Run build_concordance.py first.</span>';
+            }
+        }
+        
+        function showPopularWords() {
+            if (!concordanceData) return;
+            
+            const wordList = document.getElementById("concWordList");
+            let words = [];
+            let headerText = '';
+            
+            if (currentConcTab === 'count') {
+                headerText = 'By chapter count:';
+                words = Object.entries(concordanceData.concordance)
+                    .map(([word, entries]) => ({ word, count: entries.length }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 100);
+            } else if (currentConcTab === 'people') {
+                headerText = 'Bible people (A-Z):';
+                words = BIBLE_PEOPLE
+                    .filter(p => concordanceData.concordance[p])
+                    .map(word => ({ word, count: concordanceData.concordance[word].length }))
+                    .sort((a, b) => a.word.localeCompare(b.word));
+            } else if (currentConcTab === 'places') {
+                headerText = 'Bible places (A-Z):';
+                words = BIBLE_PLACES
+                    .filter(p => concordanceData.concordance[p])
+                    .map(word => ({ word, count: concordanceData.concordance[word].length }))
+                    .sort((a, b) => a.word.localeCompare(b.word));
+            }
+            
+            wordList.innerHTML = `<div style="color:#8b949e;font-size:0.85em;margin-bottom:10px;">${headerText}</div>`;
+            
+            words.forEach(({ word, count }) => {
+                const item = document.createElement("div");
+                item.className = "conc-word-item" + (word === selectedConcWord ? " selected" : "");
+                item.dataset.word = word;  // Store exact word for matching
+                item.innerHTML = `<span>${word}</span><span class="count">${count}</span>`;
+                item.onclick = () => selectConcordanceWord(word);
+                wordList.appendChild(item);
+            });
+            
+            if (words.length === 0) {
+                wordList.innerHTML += '<div style="color:#8b949e;font-size:0.85em;padding:10px;">No matches found</div>';
+            }
+        }
+        
+        function setConcordanceTab(tab) {
+            currentConcTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll(".conc-tab").forEach(btn => {
+                const isActive = (tab === 'count' && btn.textContent.includes('Count')) ||
+                                 (tab === 'people' && btn.textContent.includes('People')) ||
+                                 (tab === 'places' && btn.textContent.includes('Places'));
+                btn.classList.toggle("active", isActive);
+            });
+            
+            // Refresh word list
+            showPopularWords();
+        }
+        
+        function doConcordanceSearch() {
+            const input = document.getElementById("concSearch");
+            const term = input.value.toLowerCase().trim();
+            
+            if (!term || !concordanceData) {
+                input.style.borderColor = "#f85149";
+                setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+                return;
+            }
+            
+            // Try exact match first
+            let word = term;
+            if (!concordanceData.concordance[word]) {
+                // Try partial match
+                const matches = Object.keys(concordanceData.concordance)
+                    .filter(w => w.includes(term))
+                    .sort((a, b) => a.length - b.length);  // Shortest match first
+                
+                if (matches.length > 0) {
+                    word = matches[0];
+                } else {
+                    // No match
+                    showNoResults(term);
+                    input.style.borderColor = "#f85149";
+                    setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+                    return;
+                }
+            }
+            
+            selectConcordanceWord(word);
+            input.style.borderColor = "#3fb950";
+            setTimeout(() => { input.style.borderColor = "#30363d"; }, 500);
+        }
+        
+        function selectConcordanceWord(word) {
+            selectedConcWord = word;
+            
+            // Update word list selection (exact match using data attribute)
+            document.querySelectorAll(".conc-word-item").forEach(el => {
+                el.classList.toggle("selected", el.dataset.word === word);
+            });
+            
+            // Show results
+            const entries = concordanceData.concordance[word] || [];
+            showConcordanceResults(word, entries);
+        }
+        
+        function showConcordanceResults(word, entries) {
+            const resultsDiv = document.getElementById("concordanceResults");
+            
+            if (entries.length === 0) {
+                showNoResults(word);
+                return;
+            }
+            
+            let html = `
+                <div class="result-header">
+                    <h2>"${word}"</h2>
+                    <div class="result-count">Found in <strong>${entries.length}</strong> chapters</div>
+                </div>
+            `;
+            
+            entries.forEach(entry => {
+                // Highlight the search word in the snippet
+                const highlightedSnippet = entry.snippet.replace(
+                    new RegExp(`(${word}\\w*)`, 'gi'),
+                    '<span class="highlight">$1</span>'
+                );
+                
+                // Escape chapter key for onclick
+                const chapterEscaped = entry.chapter.replace(/'/g, "\\'");
+                
+                html += `
+                    <div class="result-card" onclick="openReader('${chapterEscaped}')" style="cursor:pointer;">
+                        <div class="result-chapter">📖 ${entry.chapter}</div>
+                        <div class="result-summary">"${entry.summary}"</div>
+                        <div class="result-verse">
+                            <span class="ref">${entry.ref}</span>
+                            ${highlightedSnippet}
+                        </div>
+                        ${entry.count > 1 ? `<div class="result-occurrences">+${entry.count - 1} more occurrence${entry.count > 2 ? 's' : ''} in this chapter</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function showNoResults(term) {
+            document.getElementById("concordanceResults").innerHTML = `
+                <div class="no-results">
+                    <h3>No results for "${term}"</h3>
+                    <p>Try a different spelling or a related word.</p>
+                    <p style="margin-top:15px;font-size:0.9em;color:#8b949e;">
+                        Tip: Words are lemmatized (e.g., "running" → "run").<br>
+                        Try the base form of the word.
+                    </p>
+                </div>
+            `;
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update tab buttons
+            document.querySelectorAll(".mode-tab").forEach(tab => {
+                const isNetwork = tab.textContent.includes("Network");
+                const shouldBeActive = (mode === 'network' && isNetwork) || (mode === 'concordance' && !isNetwork);
+                tab.classList.toggle("active", shouldBeActive);
+            });
+            
+            // Toggle views
+            const concordanceView = document.getElementById("concordanceView");
+            const controls = document.getElementById("controls");
+            const legend = document.getElementById("legend");
+            const stats = document.getElementById("stats");
+            const nodePanel = document.getElementById("nodePanel");
+            const graph = document.getElementById("graph");
+            
+            if (mode === 'concordance') {
+                concordanceView.classList.add("active");
+                controls.style.display = "none";
+                legend.style.display = "none";
+                stats.style.display = "none";
+                nodePanel.style.display = "none";
+                graph.style.display = "none";
+                
+                // Load concordance if not already loaded
+                if (!concordanceData) {
+                    loadConcordance();
+                }
+            } else {
+                concordanceView.classList.remove("active");
+                controls.style.display = "block";
+                legend.style.display = "block";
+                stats.style.display = "block";
+                nodePanel.style.display = "flex";
+                graph.style.display = "block";
+            }
+        }
+        
+        // Load concordance and entities in background after network loads
+        setTimeout(async () => {
+            await loadEntities();
+            await loadConcordance();
+        }, 1000);
+        
+        // =====================================================
+        // CHAPTER READER
+        // =====================================================
+        
+        let chaptersData = null;
+        let currentReaderChapter = null;
+        let readerFontSize = parseInt(localStorage.getItem('readerFontSize')) || 100;
+        
+        function adjustFontSize(delta) {
+            // delta: +1 to increase, -1 to decrease
+            const step = 10;  // 10% increments
+            readerFontSize = Math.max(70, Math.min(150, readerFontSize + (delta * step)));
+            
+            // Apply to reader content
+            document.getElementById("readerContent").style.fontSize = (readerFontSize / 100 * 1.15) + "em";
+            document.getElementById("fontSizeLabel").textContent = readerFontSize + "%";
+            
+            // Save preference
+            localStorage.setItem('readerFontSize', readerFontSize);
+        }
+        
+        function initFontSize() {
+            document.getElementById("readerContent").style.fontSize = (readerFontSize / 100 * 1.15) + "em";
+            document.getElementById("fontSizeLabel").textContent = readerFontSize + "%";
+        }
+        
+        async function loadChapters() {
+            try {
+                const response = await fetch("chapters.json");
+                chaptersData = await response.json();
+                console.log("Chapters loaded:", chaptersData.meta.total_chapters);
+            } catch (error) {
+                console.error("Could not load chapters:", error);
+            }
+        }
+        
+        function openReader(chapterKey) {
+            if (!chaptersData || !chaptersData.chapters[chapterKey]) {
+                console.error("Chapter not found:", chapterKey);
+                return;
+            }
+            
+            currentReaderChapter = chapterKey;
+            const chapter = chaptersData.chapters[chapterKey];
+            
+            // Update header
+            document.getElementById("readerTitle").textContent = chapterKey;
+            document.getElementById("readerSummary").textContent = chapter.summary ? `"${chapter.summary}"` : "";
+            
+            // Build verses HTML
+            let versesHtml = "";
+            chapter.verses.forEach(v => {
+                versesHtml += `<span class="verse"><span class="verse-num">${v.verse}</span> <span class="verse-text">${v.text}</span> </span>`;
+            });
+            document.getElementById("readerContent").innerHTML = versesHtml;
+            
+            // Update navigation
+            updateReaderNav();
+            
+            // Show overlay
+            document.getElementById("readerOverlay").classList.add("active");
+            document.body.style.overflow = "hidden";
+            
+            // Apply saved font size
+            initFontSize();
+            
+            // Scroll to top
+            document.getElementById("readerContent").scrollTop = 0;
+        }
+        
+        function closeReader() {
+            document.getElementById("readerOverlay").classList.remove("active");
+            document.body.style.overflow = "";
+            currentReaderChapter = null;
+        }
+        
+        function updateReaderNav() {
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const order = chaptersData.order;
+            const currentIdx = order.indexOf(currentReaderChapter);
+            
+            // Count chapters in current book
+            const bookChapters = order.filter(ch => chaptersData.chapters[ch].book === chapter.book);
+            const bookIdx = bookChapters.indexOf(currentReaderChapter) + 1;
+            
+            // Update position text
+            document.getElementById("readerPosition").textContent = 
+                `${chapter.book} · Chapter ${bookIdx} of ${bookChapters.length}`;
+            
+            // Update buttons
+            const prevBtn = document.getElementById("btnPrevChapter");
+            const nextBtn = document.getElementById("btnNextChapter");
+            
+            if (chapter.prev) {
+                const prevChapter = chaptersData.chapters[chapter.prev];
+                prevBtn.disabled = false;
+                prevBtn.innerHTML = `← ${prevChapter.book === chapter.book ? 'Ch. ' + prevChapter.chapter : prevChapter.book}`;
+            } else {
+                prevBtn.disabled = true;
+                prevBtn.innerHTML = "← Previous";
+            }
+            
+            if (chapter.next) {
+                const nextChapter = chaptersData.chapters[chapter.next];
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = `${nextChapter.book === chapter.book ? 'Ch. ' + nextChapter.chapter : nextChapter.book} →`;
+            } else {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = "Next →";
+            }
+        }
+        
+        function navigateChapter(direction) {
+            if (!currentReaderChapter || !chaptersData) return;
+            
+            const chapter = chaptersData.chapters[currentReaderChapter];
+            const targetKey = direction === 'prev' ? chapter.prev : chapter.next;
+            
+            if (targetKey) {
+                openReader(targetKey);
+            }
+        }
+        
+        // Keyboard navigation for reader
+        document.addEventListener("keydown", (event) => {
+            if (!document.getElementById("readerOverlay").classList.contains("active")) return;
+            
+            if (event.key === "Escape") {
+                closeReader();
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                navigateChapter('prev');
+            } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                navigateChapter('next');
+            }
+        });
+        
+        // Load chapters data on startup
+        loadChapters();
         
         loadData();
     </script>

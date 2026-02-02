@@ -76,44 +76,37 @@ Interactive D3.js force-directed graph with:
 
 ## What's Left to Build
 
-### Concordance Mode (Proposed)
-A **separate search mode** that searches the actual Bible text, not just summaries.
+### ~~Concordance Mode~~ ✅ COMPLETED (2026-02-02)
+Full-text search mode that searches actual Bible text (not just summaries).
 
-**Purpose:** Find ALL chapters mentioning a specific word (e.g., "pharisee" → 23+ chapters)
+**Files created:**
+- `build_concordance.py` - Indexes all 31,102 verses with spaCy lemmatization
+- `concordance.json` - 10,001 unique words mapped to chapters with verse snippets (34 MB)
+- Updated `visualization.html` - Added Concordance tab with search and results
 
-**Implementation:**
-```python
-# No LLM needed - just text indexing
-concordance = {}  # word → [chapters]
+**Features:**
+- Tab toggle between Network and Concordance modes
+- Search any word to find ALL chapters containing it
+- Results show: chapter name, 5-word summary, highlighted verse snippet
+- Popular words sidebar for quick browsing
+- Occurrence counts per chapter
 
-for chapter, text in bible_chapters.items():
-    for word in text.split():
-        lemma = lemmatize(word.lower())
-        if lemma not in stopwords and len(lemma) > 2:
-            concordance[lemma].append({
-                'chapter': chapter,
-                'context': extract_snippet(text, word)  # surrounding text
-            })
+### ~~Chapter Reader~~ ✅ COMPLETED (2026-02-02)
+Kindle-style reader for reading full chapter text with navigation.
 
-# Save to concordance.json
-```
+**Files created:**
+- `build_chapters.py` - Exports all chapter text with verse numbers and navigation links
+- `chapters.json` - 1,189 chapters with full text, summaries, and prev/next links (4.84 MB)
+- Updated `visualization.html` - Added reader modal overlay
 
-**UI Design:**
-- Tab or toggle: `[Network Mode] [Concordance Mode]`
-- Search box in Concordance mode searches actual Bible text
-- Results show:
-  - Chapter name
-  - 5-word summary (from existing data)
-  - Verse snippet with search term highlighted
-- Paginated list (not a graph)
-- Click chapter → could switch to Network mode filtered to that book
-
-**Effort estimate:** 2-3 hours
-
-**Files to create:**
-- `build_concordance.py` - Index builder
-- `concordance.json` - Word → chapters index with snippets
-- Update `visualization.html` - Add Concordance tab/mode
+**Features:**
+- Clean, readable typography (Georgia serif font)
+- Verse numbers styled subtly
+- Summary shown in header
+- Previous/Next chapter navigation (arrows or buttons)
+- Seamless book transitions (e.g., Genesis 50 → Exodus 1)
+- Keyboard shortcuts: ←/→ navigate, Esc closes
+- Opens from: double-click chapter in Network, click chapter in Concordance
 
 ### Other Potential Enhancements
 
