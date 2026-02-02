@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Semantic Network</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            color: #c9d1d9;
+            overflow: hidden;
+        }
+        
+        #container { width: 100vw; height: 100vh; position: relative; }
+        #graph { width: 100%; height: 100%; }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            z-index: 100;
+            max-width: 300px;
+        }
+        
+        #controls h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: #58a6ff;
+        }
+        
+        .subtitle {
+            font-size: 0.75em;
+            color: #8b949e;
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin: 10px 0 4px;
+            font-size: 0.85em;
+            color: #8b949e;
+        }
+        
+        input[type="range"] { width: 100%; margin: 5px 0; }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        
+        .value { color: #58a6ff; float: right; }
+        
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            font-size: 0.85em;
+        }
+        
+        #legend h3 { margin-bottom: 10px; color: #58a6ff; font-size: 1em; }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+        }
+        
+        .legend-circle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .legend-rect {
+            width: 18px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(22, 27, 34, 0.95);
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            font-size: 0.85em;
+        }
+        
+        #stats div { margin: 4px 0; }
+        #stats .num { color: #58a6ff; font-weight: 600; }
+        
+        #nodePanel {
+            position: absolute;
+            top: 140px;
+            right: 20px;
+            width: 200px;
+            max-height: calc(100vh - 180px);
+            background: rgba(22, 27, 34, 0.95);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #nodePanel h3 {
+            padding: 12px 15px;
+            margin: 0;
+            font-size: 0.95em;
+            color: #58a6ff;
+            border-bottom: 1px solid #30363d;
+            flex-shrink: 0;
+        }
+        
+        #nodePanelList {
+            overflow-y: auto;
+            flex: 1;
+            padding: 8px 0;
+        }
+        
+        .panel-node {
+            padding: 6px 15px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-node:hover:not(.in-path) {
+            background: rgba(88, 166, 255, 0.15);
+        }
+        
+        .panel-node.in-path {
+            opacity: 0.4;
+            cursor: default;
+        }
+        
+        .panel-node .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .panel-node.chapter .dot {
+            border-radius: 2px;
+            width: 12px;
+            height: 8px;
+        }
+        
+        .panel-node .name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .panel-section {
+            padding: 4px 15px;
+            font-size: 0.75em;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+        
+        .panel-section:first-child {
+            margin-top: 0;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(22, 27, 34, 0.98);
+            border: 1px solid #58a6ff;
+            border-radius: 10px;
+            padding: 14px 18px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            max-width: 350px;
+            z-index: 200;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        #tooltip h3 { color: #58a6ff; margin-bottom: 6px; text-transform: capitalize; }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .role-badge.subject { background: #f0883e; color: #fff; }
+        .role-badge.verb { background: #a371f7; color: #fff; }
+        .role-badge.object { background: #3fb950; color: #fff; }
+        .role-badge.modifier { background: #58a6ff; color: #fff; }
+        .role-badge.chapter { background: #f85149; color: #fff; }
+        
+        #tooltip .stat { margin: 4px 0; font-size: 0.9em; }
+        #tooltip .summary { margin-top: 8px; font-style: italic; color: #c9d1d9; }
+        #tooltip .chapters-list { margin-top: 8px; font-size: 0.8em; color: #8b949e; }
+        
+        .link { stroke-opacity: 0.4; }
+        .link.highlighted { stroke: #58a6ff !important; stroke-opacity: 1; }
+        
+        .node { cursor: pointer; }
+        .node.dimmed { opacity: 0.1; }
+        .node.selected circle, .node.selected rect { 
+            stroke: #fff; 
+            stroke-width: 3; 
+        }
+        .node.in-path circle, .node.in-path rect {
+            stroke: #58a6ff;
+            stroke-width: 2.5;
+        }
+        .node.next-in-chain circle { 
+            stroke: #ffd700; 
+            stroke-width: 3; 
+            stroke-dasharray: 4 2;
+        }
+        .node.next-in-chain rect { 
+            stroke: #ffd700; 
+            stroke-width: 2; 
+            stroke-dasharray: 3 2;
+        }
+        .node.search-highlight circle, .node.search-highlight rect {
+            stroke: #fff;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 8px #fff);
+        }
+        .node text {
+            font-size: 9px;
+            fill: #fff;
+            pointer-events: none;
+            text-shadow: 0 0 4px #0d1117, 0 0 8px #0d1117;
+            text-anchor: middle;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3em;
+            color: #58a6ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">Loading semantic network...</div>
+        <svg id="graph"></svg>
+        
+        <div id="controls">
+            <h1>📖 Bible Semantic Network</h1>
+            <div class="subtitle">Subjects → Actions → Objects → Chapters</div>
+            
+            <label>Search:</label>
+            <div style="display:flex;gap:5px;margin-top:5px;">
+                <input type="text" id="search" placeholder="god, abraham..." style="flex:1;" onkeydown="if(event.key==='Enter')doSearch()">
+                <button onclick="doSearch()" style="padding:6px 12px;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;">Go</button>
+            </div>
+            
+            <label>Filter by Book:</label>
+            <select id="bookFilter"><option value="">All Books</option></select>
+            
+            <label>Show Roles:</label>
+            <div style="margin-top:5px;">
+                <label style="display:inline;margin:0;"><input type="checkbox" id="showSubjects" checked> Subjects</label>
+                <label style="display:inline;margin:0 0 0 8px;"><input type="checkbox" id="showVerbs" checked> Verbs</label>
+            </div>
+            <div style="margin-top:5px;">
+                <label style="display:inline;margin:0;"><input type="checkbox" id="showObjects" checked> Objects</label>
+            </div>
+            
+        </div>
+        
+        <div id="legend">
+            <h3>Semantic Roles</h3>
+            <div class="legend-item"><div class="legend-circle" style="background:#f0883e;"></div>Subject (actor)</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#a371f7;"></div>Verb (action)</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#3fb950;"></div>Object</div>
+            <div class="legend-item"><div class="legend-circle" style="background:#58a6ff;"></div>Modifier</div>
+            <div class="legend-item"><div class="legend-rect" style="background:#f85149;"></div>Chapter (leaf)</div>
+        </div>
+        
+        <div id="stats">
+            <div>Subjects: <span class="num" id="subjectCount">-</span></div>
+            <div>Verbs: <span class="num" id="verbCount">-</span></div>
+            <div>Objects: <span class="num" id="objectCount">-</span></div>
+            <div>Chapters: <span class="num" id="chapterCount">-</span></div>
+        </div>
+        
+        <div id="nodePanel">
+            <h3>Active Nodes</h3>
+            <div id="nodePanelList"></div>
+        </div>
+        
+        <div id="tooltip"></div>
+    </div>
+    
+    <script>
+        // Colors by role
+        const ROLE_COLORS = {
+            subject: '#f0883e',    // Orange - actors
+            verb: '#a371f7',       // Purple - actions
+            object: '#3fb950',     // Green - objects
+            modifier: '#58a6ff',   // Blue - modifiers
+            chapter: '#f85149'     // Red - chapters
+        };
+        
+        // Config
+        let minCount = 1;
+        let repulsionForce = -400;
+        let selectedBook = "";
+        let searchTerm = "";
+        let showRoles = { subject: true, verb: true, object: true, modifier: true };
+        let selectedNode = null;  // Currently clicked/locked node
+        let navigationPath = [];  // Track the chain of clicked nodes [node1, node2, ...]
+        
+        let allData = null;
+        let simulation = null;
+        let currentNodes = [];  // Store current rendered nodes for search
+        
+        const svg = d3.select("#graph");
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        svg.attr("width", width).attr("height", height);
+        
+        const g = svg.append("g");
+        
+        const zoom = d3.zoom()
+            .scaleExtent([0.05, 5])
+            .on("zoom", (event) => g.attr("transform", event.transform));
+        svg.call(zoom);
+        
+        const tooltip = d3.select("#tooltip");
+        
+        function nodeRadius(node) {
+            if (node.type === 'chapter') return 6;
+            // Subjects larger, verbs medium, objects/modifiers smaller
+            const base = node.role === 'subject' ? 4 : node.role === 'verb' ? 3 : 2.5;
+            return Math.sqrt(node.count) * base + 5;
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch("network_data.json");
+                allData = await response.json();
+                
+                const bookSelect = document.getElementById("bookFilter");
+                allData.meta.books.forEach(book => {
+                    const opt = document.createElement("option");
+                    opt.value = book;
+                    opt.textContent = book;
+                    bookSelect.appendChild(opt);
+                });
+                
+                document.getElementById("loading").style.display = "none";
+                renderNetwork();
+            } catch (error) {
+                document.getElementById("loading").textContent = "Error: Run build_network.py first";
+                console.error(error);
+            }
+        }
+        
+        function renderNetwork() {
+            // Reset selection when re-rendering
+            selectedNode = null;
+            navigationPath = [];
+            
+            // Filter chapters by book
+            let chapters = allData.nodes.filter(n => n.type === 'chapter');
+            if (selectedBook) {
+                chapters = chapters.filter(n => n.book === selectedBook);
+            }
+            const chapterIds = new Set(chapters.map(n => n.id));
+            
+            // Find connected words via links
+            const connectedWords = new Set();
+            const relevantLinks = new Set();
+            
+            // Find words directly connected to chapters
+            allData.links.forEach(link => {
+                if (chapterIds.has(link.target)) {
+                    connectedWords.add(link.source);
+                    relevantLinks.add(JSON.stringify(link));
+                }
+            });
+            
+            // Trace back through the chain
+            let foundNew = true;
+            let iterations = 0;
+            while (foundNew && iterations < 10) {
+                foundNew = false;
+                iterations++;
+                allData.links.forEach(link => {
+                    if (connectedWords.has(link.target) && !chapterIds.has(link.source)) {
+                        const sourceNode = allData.nodes.find(n => n.id === link.source);
+                        if (sourceNode && sourceNode.count >= minCount) {
+                            if (!connectedWords.has(link.source)) {
+                                connectedWords.add(link.source);
+                                foundNew = true;
+                            }
+                            relevantLinks.add(JSON.stringify(link));
+                        }
+                    }
+                });
+            }
+            
+            // Filter words by role visibility and min count
+            let words = allData.nodes.filter(n => 
+                n.type === 'word' && 
+                n.count >= minCount && 
+                connectedWords.has(n.id) &&
+                showRoles[n.role]
+            );
+            
+            // Search filter
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                const matchIds = new Set();
+                
+                // Find matching nodes
+                words.forEach(n => {
+                    if (n.id.includes(term)) matchIds.add(n.id);
+                });
+                chapters.forEach(n => {
+                    if (n.id.toLowerCase().includes(term)) matchIds.add(n.id);
+                });
+                
+                // Expand to connected
+                allData.links.forEach(link => {
+                    if (matchIds.has(link.source)) matchIds.add(link.target);
+                    if (matchIds.has(link.target)) matchIds.add(link.source);
+                });
+                
+                words = words.filter(n => matchIds.has(n.id));
+                chapters = chapters.filter(n => matchIds.has(n.id));
+            }
+            
+            const filteredNodes = [...words, ...chapters];
+            const nodeIds = new Set(filteredNodes.map(n => n.id));
+            
+            // Parse and filter links
+            const filteredLinks = [];
+            relevantLinks.forEach(linkStr => {
+                const link = JSON.parse(linkStr);
+                if (nodeIds.has(link.source) && nodeIds.has(link.target)) {
+                    filteredLinks.push(link);
+                }
+            });
+            
+            // Update stats
+            document.getElementById("subjectCount").textContent = words.filter(n => n.role === 'subject').length;
+            document.getElementById("verbCount").textContent = words.filter(n => n.role === 'verb').length;
+            document.getElementById("objectCount").textContent = words.filter(n => n.role === 'object').length + 
+                words.filter(n => n.role === 'modifier').length;
+            document.getElementById("chapterCount").textContent = chapters.length;
+            
+            g.selectAll("*").remove();
+            
+            if (filteredNodes.length === 0) return;
+            
+            const simNodes = filteredNodes.map(d => ({...d}));
+            const simLinks = filteredLinks.map(d => ({...d}));
+            
+            // Store for search access
+            currentNodes = simNodes;
+            
+            // Build lookup tables for fast path queries
+            buildLookupTables(simNodes, simLinks);
+            
+            simulation = d3.forceSimulation(simNodes)
+                .force("link", d3.forceLink(simLinks)
+                    .id(d => d.id)
+                    .distance(35))
+                .force("charge", d3.forceManyBody().strength(repulsionForce))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(d => nodeRadius(d) + 2));
+            
+            // Links colored by source role
+            const link = g.append("g")
+                .selectAll("line")
+                .data(simLinks)
+                .enter().append("line")
+                .attr("class", "link")
+                .attr("stroke", d => {
+                    const sourceNode = simNodes.find(n => n.id === d.source.id || n.id === d.source);
+                    return sourceNode ? ROLE_COLORS[sourceNode.role] || '#30363d' : '#30363d';
+                })
+                .attr("stroke-width", d => Math.sqrt(d.weight) * 0.8 + 0.5);
+            
+            const node = g.append("g")
+                .selectAll("g")
+                .data(simNodes)
+                .enter().append("g")
+                .attr("class", d => `node ${d.type}`)
+                .on("mouseover", (event, d) => showTooltip(event, d))
+                .on("mouseout", () => hideTooltip())
+                .on("click", (event, d) => {
+                    event.stopPropagation();
+                    
+                    // Ignore clicks on dimmed/inactive nodes
+                    const isDimmed = d3.select(event.currentTarget).classed("dimmed");
+                    if (isDimmed) {
+                        return;
+                    }
+                    
+                    if (selectedNode && selectedNode.id === d.id) {
+                        // Clicking same node - go back one step or deselect
+                        if (navigationPath.length > 1) {
+                            navigationPath.pop();
+                            selectedNode = simNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                            highlightPath(navigationPath, simNodes, simLinks, node, link);
+                        } else {
+                            // Reset completely
+                            navigationPath = [];
+                            selectedNode = null;
+                            resetHighlight(node, link);
+                        }
+                    } else if (navigationPath.length > 0) {
+                        // Check if this node is a valid next step in the chain
+                        const validNext = getValidNextNodes(navigationPath, simNodes, simLinks);
+                        if (validNext.has(d.id)) {
+                            // Add to path
+                            navigationPath.push(d.id);
+                            selectedNode = d;
+                            highlightPath(navigationPath, simNodes, simLinks, node, link);
+                        }
+                        // If not valid next, do nothing
+                    } else {
+                        // Start new path
+                        navigationPath = [d.id];
+                        selectedNode = d;
+                        highlightPath(navigationPath, simNodes, simLinks, node, link);
+                    }
+                })
+                .on("contextmenu", (event) => {
+                    // Right click releases the chain
+                    event.preventDefault();
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                    g.selectAll(".node").classed("search-highlight", false);
+                });
+            
+            // Escape key releases the chain
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    navigationPath = [];
+                    selectedNode = null;
+                    resetHighlight(node, link);
+                    g.selectAll(".node").classed("search-highlight", false);
+                }
+            });
+            
+            // Right click on background also releases
+            svg.on("contextmenu", (event) => {
+                event.preventDefault();
+                navigationPath = [];
+                selectedNode = null;
+                resetHighlight(node, link);
+                g.selectAll(".node").classed("search-highlight", false);
+            });
+            
+            // Word nodes (circles)
+            node.filter(d => d.type === 'word')
+                .append("circle")
+                .attr("r", d => nodeRadius(d))
+                .attr("fill", d => ROLE_COLORS[d.role] || '#888')
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5);
+            
+            // Chapter nodes (rectangles)
+            node.filter(d => d.type === 'chapter')
+                .append("rect")
+                .attr("width", 10)
+                .attr("height", 7)
+                .attr("x", -5)
+                .attr("y", -3.5)
+                .attr("rx", 2)
+                .attr("fill", ROLE_COLORS.chapter)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+            
+            // Labels for subjects and high-count words
+            node.filter(d => d.type === 'word' && (d.role === 'subject' || d.count >= minCount * 3))
+                .append("text")
+                .text(d => d.id)
+                .attr("dy", d => nodeRadius(d) + 11);
+            
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+            
+            // Initialize node panel with all nodes
+            updateNodePanel(simNodes);
+        }
+        
+        // Pre-computed lookup tables (built once when data loads)
+        let chapterChains = {};   // chapter id -> array of words in its chain
+        let wordToChapters = {};  // word -> Set of chapter ids that ACTUALLY contain this word
+        let nodeOutgoing = {};    // node -> Set of nodes it points to
+        
+        function buildLookupTables(nodes, links) {
+            chapterChains = {};
+            wordToChapters = {};
+            nodeOutgoing = {};
+            
+            // Build outgoing edges map
+            links.forEach(l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                if (!nodeOutgoing[srcId]) nodeOutgoing[srcId] = new Set();
+                nodeOutgoing[srcId].add(tgtId);
+            });
+            
+            // Store each chapter's actual word chain
+            nodes.filter(n => n.type === 'chapter').forEach(ch => {
+                const chain = ch.chain || [];
+                chapterChains[ch.id] = chain;
+                
+                // Map each word to chapters that ACTUALLY contain it
+                chain.forEach(word => {
+                    if (!wordToChapters[word]) wordToChapters[word] = new Set();
+                    wordToChapters[word].add(ch.id);
+                });
+            });
+        }
+        
+        // Get chapters whose chain contains ALL words in the path
+        function getReachableChapters(path) {
+            if (path.length === 0) return new Set();
+            
+            const validChapters = new Set();
+            
+            // Check each chapter's actual chain
+            for (const [chapterId, chain] of Object.entries(chapterChains)) {
+                // All path words must be in this chapter's chain
+                let allFound = true;
+                for (const word of path) {
+                    if (!chain.includes(word)) {
+                        allFound = false;
+                        break;
+                    }
+                }
+                if (allFound) {
+                    validChapters.add(chapterId);
+                }
+            }
+            
+            return validChapters;
+        }
+        
+        // Get valid next nodes that maintain the path constraint
+        function getValidNextNodes(path, nodes, links) {
+            if (path.length === 0) return new Set();
+            
+            const lastNode = path[path.length - 1];
+            const validChapters = getReachableChapters(path);
+            
+            // Get direct outgoing from last node
+            const directNext = nodeOutgoing[lastNode] || new Set();
+            
+            // Filter to only nodes that lead to valid chapters
+            const validNext = new Set();
+            directNext.forEach(nextId => {
+                const nextNode = nodes.find(n => n.id === nextId);
+                if (nextNode && nextNode.type === 'chapter') {
+                    // It's a chapter - check if it's valid (contains all path words)
+                    if (validChapters.has(nextId)) {
+                        validNext.add(nextId);
+                    }
+                } else {
+                    // It's a word - check if adding it still has valid chapters
+                    const newPath = [...path, nextId];
+                    const stillValid = getReachableChapters(newPath);
+                    if (stillValid.size > 0) {
+                        validNext.add(nextId);
+                    }
+                }
+            });
+            
+            return validNext;
+        }
+        
+        // Highlight based on navigation path
+        function highlightPath(path, nodes, links, nodeSelection, linkSelection) {
+            if (path.length === 0) {
+                resetHighlight(nodeSelection, linkSelection);
+                return;
+            }
+            
+            const pathSet = new Set(path);
+            const lastNode = path[path.length - 1];
+            const validNext = getValidNextNodes(path, nodes, links);
+            
+            // Visible: path nodes + valid next nodes
+            const visible = new Set([...pathSet, ...validNext]);
+            
+            nodeSelection.classed("dimmed", n => !visible.has(n.id));
+            nodeSelection.classed("selected", n => n.id === lastNode);
+            nodeSelection.classed("next-in-chain", n => validNext.has(n.id));
+            nodeSelection.classed("in-path", n => pathSet.has(n.id) && n.id !== lastNode);
+            
+            // Highlight links in the path and from last node to valid next
+            linkSelection.classed("highlighted", l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                
+                // Link is in path
+                for (let i = 0; i < path.length - 1; i++) {
+                    if (path[i] === srcId && path[i + 1] === tgtId) return true;
+                }
+                
+                // Link from last node to valid next
+                if (srcId === lastNode && validNext.has(tgtId)) return true;
+                
+                return false;
+            });
+            
+            // Update node panel with visible nodes and path
+            const visibleNodes = nodes.filter(n => visible.has(n.id));
+            updateNodePanel(visibleNodes, path);
+        }
+        
+        function highlightConnected(d, nodes, links, nodeSelection, linkSelection, locked = false) {
+            const nextInChain = new Set();  // Nodes this one points TO (downstream)
+            
+            // Find downstream nodes (this node → target)
+            links.forEach(l => {
+                const srcId = l.source.id || l.source;
+                const tgtId = l.target.id || l.target;
+                if (srcId === d.id) {
+                    nextInChain.add(tgtId);
+                }
+            });
+            
+            if (locked) {
+                // Use path-based highlighting
+                highlightPath([d.id], nodes, links, nodeSelection, linkSelection);
+            } else {
+                // Hover: show selected + all directly connected (both directions)
+                const connected = new Set([d.id]);
+                links.forEach(l => {
+                    const srcId = l.source.id || l.source;
+                    const tgtId = l.target.id || l.target;
+                    if (srcId === d.id) connected.add(tgtId);
+                    if (tgtId === d.id) connected.add(srcId);
+                });
+                
+                nodeSelection.classed("dimmed", n => !connected.has(n.id));
+                nodeSelection.classed("selected", false);
+                nodeSelection.classed("next-in-chain", false);
+                nodeSelection.classed("in-path", false);
+                
+                linkSelection.classed("highlighted", l => {
+                    const srcId = l.source.id || l.source;
+                    const tgtId = l.target.id || l.target;
+                    return srcId === d.id || tgtId === d.id;
+                });
+            }
+        }
+        
+        function resetHighlight(nodeSelection, linkSelection) {
+            nodeSelection.classed("dimmed", false);
+            nodeSelection.classed("selected", false);
+            nodeSelection.classed("next-in-chain", false);
+            nodeSelection.classed("in-path", false);
+            linkSelection.classed("highlighted", false);
+            updateNodePanel(currentNodes);  // Show all nodes
+        }
+        
+        function updateNodePanel(visibleNodes, pathNodes = []) {
+            const panel = document.getElementById("nodePanelList");
+            panel.innerHTML = "";
+            
+            if (!visibleNodes || visibleNodes.length === 0) return;
+            
+            const pathSet = new Set(pathNodes);
+            
+            // Group by role/type
+            const subjects = visibleNodes.filter(n => n.type === 'word' && n.role === 'subject');
+            const verbs = visibleNodes.filter(n => n.type === 'word' && n.role === 'verb');
+            const objects = visibleNodes.filter(n => n.type === 'word' && (n.role === 'object' || n.role === 'modifier'));
+            const chapters = visibleNodes.filter(n => n.type === 'chapter');
+            
+            function addSection(title, nodes, color) {
+                if (nodes.length === 0) return;
+                
+                const section = document.createElement("div");
+                section.className = "panel-section";
+                section.textContent = title + " (" + nodes.length + ")";
+                panel.appendChild(section);
+                
+                // Sort: path nodes first (in path order), then by count
+                const pathNodesInSection = nodes.filter(n => pathSet.has(n.id));
+                const otherNodes = nodes.filter(n => !pathSet.has(n.id));
+                
+                // Sort path nodes by their position in the path
+                pathNodesInSection.sort((a, b) => pathNodes.indexOf(a.id) - pathNodes.indexOf(b.id));
+                
+                // Sort other nodes by count (descending) for words, alphabetically for chapters
+                if (nodes[0].type === 'chapter') {
+                    otherNodes.sort((a, b) => a.id.localeCompare(b.id));
+                } else {
+                    otherNodes.sort((a, b) => (b.count || 0) - (a.count || 0));
+                }
+                
+                const sortedNodes = [...pathNodesInSection, ...otherNodes];
+                
+                sortedNodes.forEach(n => {
+                    const isInPath = pathSet.has(n.id);
+                    const item = document.createElement("div");
+                    item.className = "panel-node" + (n.type === 'chapter' ? " chapter" : "") + (isInPath ? " in-path" : "");
+                    item.innerHTML = `<span class="dot" style="background:${color}"></span><span class="name">${n.id}</span>`;
+                    if (!isInPath) {
+                        item.onclick = () => panelNodeClick(n);
+                    }
+                    panel.appendChild(item);
+                });
+            }
+            
+            addSection("Subjects", subjects, ROLE_COLORS.subject);
+            addSection("Verbs", verbs, ROLE_COLORS.verb);
+            addSection("Objects", objects, ROLE_COLORS.object);
+            addSection("Chapters", chapters, ROLE_COLORS.chapter);
+        }
+        
+        function panelNodeClick(nodeData) {
+            // Find the node in currentNodes with position
+            const node = currentNodes.find(n => n.id === nodeData.id);
+            if (!node || node.x === undefined) return;
+            
+            // Zoom and center on the node
+            const scale = 3.5;
+            const x = width / 2 - node.x * scale;
+            const y = height / 2 - node.y * scale;
+            
+            svg.transition()
+                .duration(500)
+                .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+            
+            // Highlight the node
+            g.selectAll(".node").classed("search-highlight", false);
+            g.selectAll(".node")
+                .filter(n => n.id === node.id)
+                .classed("search-highlight", true);
+            
+            // Simulate a click on the node to continue/start chain
+            const nodeElement = g.selectAll(".node").filter(n => n.id === node.id);
+            if (!nodeElement.empty()) {
+                // Trigger the same logic as clicking the node
+                const isDimmed = nodeElement.classed("dimmed");
+                if (!isDimmed) {
+                    // Replicate click logic
+                    if (selectedNode && selectedNode.id === node.id) {
+                        if (navigationPath.length > 1) {
+                            navigationPath.pop();
+                            selectedNode = currentNodes.find(n => n.id === navigationPath[navigationPath.length - 1]);
+                            highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        } else {
+                            navigationPath = [];
+                            selectedNode = null;
+                            resetHighlight(g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        }
+                    } else if (navigationPath.length > 0) {
+                        const validNext = getValidNextNodes(navigationPath, currentNodes, simulation.force("link").links());
+                        if (validNext.has(node.id)) {
+                            navigationPath.push(node.id);
+                            selectedNode = node;
+                            highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                        }
+                    } else {
+                        navigationPath = [node.id];
+                        selectedNode = node;
+                        highlightPath(navigationPath, currentNodes, simulation.force("link").links(), g.selectAll(".node"), g.selectAll(".link line, .links line"));
+                    }
+                }
+            }
+        }
+        
+        function showTooltip(event, d) {
+            const role = d.type === 'chapter' ? 'chapter' : d.role;
+            let html = `<h3>${d.id}</h3>`;
+            html += `<span class="role-badge ${role}">${role}</span>`;
+            
+            if (d.type === 'word') {
+                html += `<div class="stat">Appears in <strong>${d.count}</strong> summaries</div>`;
+                if (d.chapters && d.chapters.length > 0) {
+                    html += `<div class="chapters-list">${d.chapters.slice(0, 8).join(", ")}${d.chapters.length > 8 ? "..." : ""}</div>`;
+                }
+            } else {
+                html += `<div class="stat">Book: ${d.book}</div>`;
+                html += `<div class="summary">"${d.summary}"</div>`;
+            }
+            
+            tooltip.html(html)
+                .style("opacity", 1)
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+        
+        function hideTooltip() { tooltip.style("opacity", 0); }
+        
+        // Drag functions removed - nodes are static after settling
+        
+        // Event listeners
+        // Min usage slider removed - always use 1
+        
+        // Repulsion slider removed - fixed at 400
+        
+        document.getElementById("bookFilter").addEventListener("change", function() {
+            selectedBook = this.value;
+            renderNetwork();
+        });
+        
+        function doSearch() {
+            const searchInput = document.getElementById("search");
+            searchTerm = searchInput.value.toLowerCase().trim();
+            
+            console.log("Search:", searchTerm, "Nodes:", currentNodes.length);
+            
+            if (!searchTerm || currentNodes.length === 0) {
+                searchInput.style.borderColor = "#f85149";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+                return;
+            }
+            
+            // Find matching node (exact match first, then partial)
+            let match = currentNodes.find(n => n.id === searchTerm);
+            if (!match) {
+                match = currentNodes.find(n => n.id.includes(searchTerm));
+            }
+            
+            if (match && match.x !== undefined && match.y !== undefined) {
+                // Center and zoom closer on the node
+                const scale = 3.5;
+                const x = width / 2 - match.x * scale;
+                const y = height / 2 - match.y * scale;
+                
+                svg.transition()
+                    .duration(500)
+                    .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+                
+                // Highlight the found node in white
+                g.selectAll(".node").classed("search-highlight", false);  // Clear previous
+                g.selectAll(".node")
+                    .filter(n => n.id === match.id)
+                    .classed("search-highlight", true);
+                
+                // Flash green
+                searchInput.style.borderColor = "#3fb950";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+            } else {
+                // No match - flash red
+                searchInput.style.borderColor = "#f85149";
+                setTimeout(() => { searchInput.style.borderColor = "#30363d"; }, 500);
+            }
+        }
+        
+        // Search handlers are inline on the elements
+        
+        ['showSubjects', 'showVerbs', 'showObjects'].forEach(id => {
+            document.getElementById(id).addEventListener("change", function() {
+                if (id === 'showSubjects') showRoles['subject'] = this.checked;
+                if (id === 'showVerbs') showRoles['verb'] = this.checked;
+                if (id === 'showObjects') {
+                    showRoles['object'] = this.checked;
+                    showRoles['modifier'] = this.checked;
+                }
+                renderNetwork();
+            });
+        });
+        
+        window.addEventListener("resize", () => {
+            svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+            if (simulation) {
+                simulation.force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2));
+                simulation.alpha(0.3).restart();
+            }
+        });
+        
+        loadData();
+    </script>
+</body>
+</html>
