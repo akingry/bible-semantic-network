@@ -1,29 +1,29 @@
-# 📖 Bible Semantic Network
+# Bible Semantic Network
 
 An interactive visualization for exploring the Bible through semantic relationships and full-text search.
 
 ## Features
 
-### 🕸️ Network View
+### Network View
 Explore Bible chapters through a force-directed graph of semantic relationships:
-- **Subjects** (orange) → **Verbs** (purple) → **Objects** (green) → **Chapters** (red)
+- **Subjects** (orange) -> **Verbs** (purple) -> **Objects** (green) -> **Chapters** (red)
 - Each chapter is summarized in 5 words using AI
 - Click nodes to drill down through concept chains
 - Filter by book, search for specific terms
 
-### 📚 Concordance View
+### Concordance View
 Full-text search across all 31,102 verses:
 - Find every chapter containing a word
 - See verse context with highlighted matches
 - Browse popular words sidebar
 
-### 📖 Chapter Reader
+### Chapter Reader
 Kindle-style reading experience:
 - Clean typography with adjustable font size
 - Previous/Next navigation with keyboard shortcuts
 - Jump to any book and chapter directly
 
-### 🔊 Voice Reader
+### Voice Reader
 Listen to chapters read aloud:
 - Text-to-speech with streaming playback
 - Starts playing within seconds
@@ -60,11 +60,11 @@ Listen to chapters read aloud:
 
 ## Tech Stack
 
-- **D3.js** — Force-directed graph visualization
-- **spaCy** — NLP parsing for semantic extraction
-- **Edge TTS** — Microsoft's free text-to-speech API
-- **aiohttp** — Async HTTP server for streaming audio
-- **Vanilla JS/CSS** — No framework dependencies
+- **D3.js** - Force-directed graph visualization
+- **spaCy** - NLP parsing for semantic extraction
+- **Edge TTS** - Microsoft's free text-to-speech API
+- **aiohttp** - Async HTTP server for streaming audio
+- **Vanilla JS/CSS** - No framework dependencies
 
 ## Data
 
@@ -82,7 +82,7 @@ See [BUILD.md](BUILD.md) for detailed instructions on:
 
 ## License
 
-MIT License — See [LICENSE](LICENSE) for details.
+MIT License - See [LICENSE](LICENSE) for details.
 
 ## Author
 
